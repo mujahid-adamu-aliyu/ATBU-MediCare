@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patient Dashboard</title>
+</head>
+<body>
+
+<h1>Patient Dashboard</h1>
+<p id="welcomeMsg">Loading...</p>
+<button id="logoutBtn">Logout</button>
+
+<hr>
+
+<h2>Upcoming Appointment</h2>
+<div id="upcomingAppt">Loading...</div>
+
+<hr>
+
+<h2>Book an Appointment</h2>
+
+<div id="bookStep1">
+  <h3>Step 1: Choose a Doctor</h3>
+  <select id="doctorSelect"></select>
+  <button id="loadSlotsBtn">View Available Shifts</button>
+</div>
+
+<div id="bookStep2" style="display:none;">
+  <h3>Step 2: Choose a Shift</h3>
+  <div id="slotsList"></div>
+</div>
+
+<div id="bookStep3" style="display:none;">
+  <h3>Step 3: Reason for Visit</h3>
+  <textarea id="reasonInput" placeholder="Describe your reason for visit"></textarea><br>
+  <button id="confirmBookingBtn">Confirm Booking</button>
+  <p id="bookingResult"></p>
+</div>
+
+<hr>
+
+<h2>My Appointments</h2>
+<button id="refreshApptsBtn">Refresh</button>
+<div id="apptsList">Loading...</div>
+
+<hr>
+
+<h2>My Prescriptions</h2>
+<div id="prescriptionsList">Loading...</div>
+
+<hr>
+
+<h2>Payments</h2>
+<div id="paymentsList">Loading...</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const SUPABASE_URL = 'https://qseuseqkzvnlqsartkoq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXVzZXFrenZubHFzYXJ0a29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjcwMTcsImV4cCI6MjA5OTIwMzAxN30.49UXm0BhbHy6oEAYRTJjddiRB3VsrVg-jkgmAa2fEH4'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+let currentUser = null
+let selectedSlot = null
+
+// ---------------------------------------------------------
+// INIT / AUTH CHECK
+// ---------------------------------------------------------
+async function init() {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session) {
+    window.location.href = 'index.html'
+    return
+  }
+
+  currentUser = session.user
+
+  // confirm role is patient
+  const { data: roleRow, error: roleErr } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (roleErr || !roleRow || roleRow.role !== 'patient') {
+    window.location.href = 'index.html'
+    return
+  }
+
+  // load patient profile
+  const { data: patient, error: patientErr } = await supabase
+    .from('patients')
+    .select('full_name')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (patient) {
+    document.getElementById('welcomeMsg').textContent = 'Welcome, ' + patient.full_name
+  }
+
+  loadUpcomingAppointment()
+  loadDoctors()
+  loadAppointments()
+  loadPrescriptions()
+  loadPayments()
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut()
+  window.location.href = 'index.html'
+})
+
+// ---------------------------------------------------------
+// UPCOMING APPOINTMENT
+// ---------------------------------------------------------
+async function loadUpcomingAppointment() {
+  const el = document.getElementById('upcomingAppt')
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, assigned_time, status, reason')
+    .eq('patient_id', currentUser.id)
+    .in('status', ['pending', 'approved'])
+    .order('assigned_time', { ascending: true })
+    .limit(1)
+
+  if (error || !data || data.length === 0) {
+    el.textContent = 'No upcoming appointments.'
+    return
+  }
+
+  const appt = data[0]
+  el.textContent = `Time: ${appt.assigned_time} | Status: ${appt.status} | Reason: ${appt.reason}`
+}
+
+// ---------------------------------------------------------
+// BOOKING FLOW
+// ---------------------------------------------------------
+async function loadDoctors() {
+  const select = document.getElementById('doctorSelect')
+  select.innerHTML = ''
+
+  const { data, error } = await supabase
+    .from('doctors')
+    .select('id, full_name, licence_number')
+    .eq('is_active', true)
+
+  if (error || !data) {
+    select.innerHTML = '<option>Error loading doctors</option>'
+    return
+  }
+
+  data.forEach(doc => {
+    const opt = document.createElement('option')
+    opt.value = doc.id
+    opt.textContent = doc.full_name + ' (' + doc.licence_number + ')'
+    select.appendChild(opt)
+  })
+}
+
+document.getElementById('loadSlotsBtn').addEventListener('click', async () => {
+  const doctorId = document.getElementById('doctorSelect').value
+  const slotsList = document.getElementById('slotsList')
+  slotsList.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('doctor_slots')
+    .select('id, date, shift, capacity, booked_count')
+    .eq('doctor_id', doctorId)
+    .gte('date', new Date().toISOString().split('T')[0])
+    .order('date', { ascending: true })
+
+  if (error || !data || data.length === 0) {
+    slotsList.innerHTML = 'No available shifts for this doctor.'
+    document.getElementById('bookStep2').style.display = 'block'
+    return
+  }
+
+  slotsList.innerHTML = ''
+  data.forEach(slot => {
+    const spotsLeft = slot.capacity - slot.booked_count
+    const div = document.createElement('div')
+    div.textContent = `${slot.date} - ${slot.shift.toUpperCase()} - Spots left: ${spotsLeft} `
+    const btn = document.createElement('button')
+    btn.textContent = spotsLeft > 0 ? 'Select' : 'Full'
+    btn.disabled = spotsLeft <= 0
+    btn.addEventListener('click', () => {
+      selectedSlot = slot.id
+      document.getElementById('bookStep3').style.display = 'block'
+      document.getElementById('bookingResult').textContent = 'Selected slot: ' + slot.date + ' ' + slot.shift
+    })
+    div.appendChild(btn)
+    slotsList.appendChild(div)
+  })
+
+  document.getElementById('bookStep2').style.display = 'block'
+})
+
+document.getElementById('confirmBookingBtn').addEventListener('click', async () => {
+  const reason = document.getElementById('reasonInput').value.trim()
+  const resultEl = document.getElementById('bookingResult')
+
+  if (!selectedSlot) {
+    resultEl.textContent = 'Please select a shift first.'
+    return
+  }
+  if (!reason) {
+    resultEl.textContent = 'Please enter a reason for visit.'
+    return
+  }
+
+  const { data, error } = await supabase.rpc('book_appointment', {
+    p_slot_id: selectedSlot,
+    p_patient_id: currentUser.id,
+    p_reason: reason
+  })
+
+  if (error) {
+    resultEl.textContent = 'Booking failed: ' + error.message
+    return
+  }
+
+  resultEl.textContent = 'Booking confirmed! Appointment ID: ' + data
+  loadAppointments()
+  loadUpcomingAppointment()
+})
+
+// ---------------------------------------------------------
+// APPOINTMENTS LIST
+// ---------------------------------------------------------
+async function loadAppointments() {
+  const el = document.getElementById('apptsList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, assigned_time, reason, status, cancellation_note, advice_to_patient')
+    .eq('patient_id', currentUser.id)
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading appointments.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No appointments yet.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(appt => {
+    const div = document.createElement('div')
+    let text = `Time: ${appt.assigned_time} | Status: ${appt.status} | Reason: ${appt.reason}`
+    if (appt.cancellation_note) text += ` | Doctor's note: ${appt.cancellation_note}`
+    if (appt.advice_to_patient) text += ` | Advice: ${appt.advice_to_patient}`
+    div.textContent = text
+
+    if (appt.status === 'pending' || appt.status === 'approved') {
+      const cancelBtn = document.createElement('button')
+      cancelBtn.textContent = 'Cancel'
+      cancelBtn.addEventListener('click', () => cancelAppointment(appt.id))
+      div.appendChild(cancelBtn)
+    }
+
+    el.appendChild(div)
+  })
+}
+
+async function cancelAppointment(apptId) {
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status: 'cancelled' })
+    .eq('id', apptId)
+    .eq('patient_id', currentUser.id)
+
+  if (error) {
+    alert('Cancel failed: ' + error.message)
+    return
+  }
+  loadAppointments()
+  loadUpcomingAppointment()
+}
+
+document.getElementById('refreshApptsBtn').addEventListener('click', loadAppointments)
+
+// ---------------------------------------------------------
+// PRESCRIPTIONS
+// ---------------------------------------------------------
+async function loadPrescriptions() {
+  const el = document.getElementById('prescriptionsList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('prescriptions')
+    .select(`
+      id, status, external_drugs_note, created_at,
+      prescription_items ( id, dosage, frequency, duration, quantity, price_at_time, drug_stock ( drug_name, unit ) )
+    `)
+    .eq('patient_id', currentUser.id)
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading prescriptions.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No prescriptions yet.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(presc => {
+    const div = document.createElement('div')
+    let text = `Prescription (${presc.status}) - ${new Date(presc.created_at).toLocaleDateString()}`
+    if (presc.external_drugs_note) text += ` | External drugs needed: ${presc.external_drugs_note}`
+    div.textContent = text
+
+    const itemsList = document.createElement('ul')
+    presc.prescription_items.forEach(item => {
+      const li = document.createElement('li')
+      li.textContent = `${item.drug_stock.drug_name} - ${item.dosage}, ${item.frequency}, ${item.duration}, qty: ${item.quantity} (price: ${item.price_at_time})`
+      itemsList.appendChild(li)
+    })
+    div.appendChild(itemsList)
+    el.appendChild(div)
+  })
+}
+
+// ---------------------------------------------------------
+// PAYMENTS
+// ---------------------------------------------------------
+async function loadPayments() {
+  const el = document.getElementById('paymentsList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, amount, status, payment_method, payment_reference, created_at')
+    .eq('patient_id', currentUser.id)
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading payments.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No payments yet.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(pay => {
+    const div = document.createElement('div')
+    div.textContent = `Amount: ${pay.amount} | Status: ${pay.status}`
+
+    if (pay.status === 'unpaid') {
+      const methodInput = document.createElement('input')
+      methodInput.placeholder = 'Payment method'
+      const refInput = document.createElement('input')
+      refInput.placeholder = 'Payment reference'
+      const payBtn = document.createElement('button')
+      payBtn.textContent = 'Submit Payment'
+      payBtn.addEventListener('click', () => submitPayment(pay.id, methodInput.value, refInput.value))
+      div.appendChild(methodInput)
+      div.appendChild(refInput)
+      div.appendChild(payBtn)
+    }
+
+    if (pay.status === 'paid') {
+      const receiptBtn = document.createElement('button')
+      receiptBtn.textContent = 'View Receipt'
+      receiptBtn.addEventListener('click', () => {
+        alert(`RECEIPT\nAmount: ${pay.amount}\nMethod: ${pay.payment_method}\nReference: ${pay.payment_reference}\nDate: ${pay.created_at}`)
+      })
+      div.appendChild(receiptBtn)
+    }
+
+    el.appendChild(div)
+  })
+}
+
+async function submitPayment(paymentId, method, reference) {
+  if (!method || !reference) {
+    alert('Please enter both payment method and reference.')
+    return
+  }
+
+  const { error } = await supabase
+    .from('payments')
+    .update({
+      status: 'pending_verification',
+      payment_method: method,
+      payment_reference: reference
+    })
+    .eq('id', paymentId)
+    .eq('patient_id', currentUser.id)
+
+  if (error) {
+    alert('Payment submission failed: ' + error.message)
+    return
+  }
+
+  loadPayments()
+}
+
+// ---------------------------------------------------------
+// GO
+// ---------------------------------------------------------
+init()
+</script>
+
+</body>
+</html>
