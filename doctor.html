@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Doctor Dashboard</title>
+</head>
+<body>
+
+<h1>Doctor Dashboard</h1>
+<p id="welcomeMsg">Loading...</p>
+<button id="logoutBtn">Logout</button>
+
+<hr>
+
+<h2>My Roster</h2>
+<button id="refreshRosterBtn">Refresh</button>
+<div id="rosterList">Loading...</div>
+
+<hr>
+
+<h2>Pending Requests</h2>
+<button id="refreshPendingBtn">Refresh</button>
+<div id="pendingList">Loading...</div>
+
+<hr>
+
+<h2>Upcoming Approved Appointments</h2>
+<button id="refreshTodayBtn">Refresh</button>
+<div id="todayList">Loading...</div>
+
+<hr>
+
+<h2>Appointment History</h2>
+<button id="refreshHistoryBtn">Refresh</button>
+<div id="historyList">Loading...</div>
+
+<div id="consultForm" style="display:none;">
+  <h3>Complete Consultation</h3>
+  <p id="consultApptInfo"></p>
+
+  <p>Advice to Patient:<br>
+  <textarea id="adviceInput" rows="3" cols="40"></textarea></p>
+
+  <p>Medical Record (internal, not shown to patient):<br>
+  <textarea id="medicalRecordInput" rows="3" cols="40"></textarea></p>
+
+  <h4>Prescription</h4>
+  <div id="drugPickerList">Loading drugs...</div>
+  <button id="addDrugRowBtn">+ Add Drug</button>
+
+  <p>External drugs note (drugs patient must buy elsewhere, not in stock):<br>
+  <textarea id="externalDrugsInput" rows="2" cols="40"></textarea></p>
+
+  <p>
+    <button id="submitConsultBtn">Submit Consultation</button>
+    <button id="cancelConsultBtn">Cancel</button>
+  </p>
+  <p id="consultResult"></p>
+</div>
+
+<hr>
+
+<h2>Patient History Lookup</h2>
+<input id="patientSearchInput" placeholder="Patient name or email">
+<button id="searchPatientBtn">Search</button>
+<div id="patientSearchResults"></div>
+<div id="patientHistory"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const SUPABASE_URL = 'https://qseuseqkzvnlqsartkoq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXVzZXFrenZubHFzYXJ0a29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjcwMTcsImV4cCI6MjA5OTIwMzAxN30.49UXm0BhbHy6oEAYRTJjddiRB3VsrVg-jkgmAa2fEH4'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+let currentUser = null
+let drugStockCache = []
+let activeConsultApptId = null
+
+// ---------------------------------------------------------
+// INIT / AUTH CHECK
+// ---------------------------------------------------------
+async function init() {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session) {
+    window.location.href = 'index.html'
+    return
+  }
+
+  currentUser = session.user
+
+  // confirm role is doctor
+  const { data: roleRow, error: roleErr } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (roleErr || !roleRow || roleRow.role !== 'doctor') {
+    window.location.href = 'index.html'
+    return
+  }
+
+  // load doctor profile
+  const { data: doctor, error: doctorErr } = await supabase
+    .from('doctors')
+    .select('full_name')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (doctor) {
+    document.getElementById('welcomeMsg').textContent = 'Welcome, Dr. ' + doctor.full_name
+  }
+
+  loadRoster()
+  loadPending()
+  loadToday()
+  loadHistory()
+  loadDrugStock()
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut()
+  window.location.href = 'index.html'
+})
+
+// ---------------------------------------------------------
+// ROSTER (read-only, admin-managed)
+// ---------------------------------------------------------
+async function loadRoster() {
+  const el = document.getElementById('rosterList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('doctor_slots')
+    .select('id, date, shift, capacity, booked_count')
+    .eq('doctor_id', currentUser.id)
+    .gte('date', new Date().toISOString().split('T')[0])
+    .order('date', { ascending: true })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading roster.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No upcoming shifts scheduled.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(slot => {
+    const div = document.createElement('div')
+    div.textContent = `${slot.date} - ${slot.shift.toUpperCase()} - Booked: ${slot.booked_count}/${slot.capacity}`
+    el.appendChild(div)
+  })
+}
+
+document.getElementById('refreshRosterBtn').addEventListener('click', loadRoster)
+
+// ---------------------------------------------------------
+// PENDING REQUESTS
+// ---------------------------------------------------------
+async function loadPending() {
+  const el = document.getElementById('pendingList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select(`
+      id, assigned_time, reason, status, created_at,
+      doctor_slots!inner ( doctor_id, date, shift ),
+      patients ( full_name )
+    `)
+    .eq('doctor_slots.doctor_id', currentUser.id)
+    .eq('status', 'pending')
+    .order('assigned_time', { ascending: true })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading pending requests.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No pending requests.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(appt => {
+    const div = document.createElement('div')
+    const patientName = appt.patients ? appt.patients.full_name : 'Unknown patient'
+    div.textContent = `${patientName} | Time: ${appt.assigned_time} | Reason: ${appt.reason}  `
+
+    const approveBtn = document.createElement('button')
+    approveBtn.textContent = 'Approve'
+    approveBtn.addEventListener('click', () => approveAppointment(appt.id))
+
+    const cancelBtn = document.createElement('button')
+    cancelBtn.textContent = 'Cancel'
+    cancelBtn.addEventListener('click', () => cancelAppointmentWithNote(appt.id))
+
+    div.appendChild(approveBtn)
+    div.appendChild(cancelBtn)
+    el.appendChild(div)
+  })
+}
+
+document.getElementById('refreshPendingBtn').addEventListener('click', loadPending)
+
+async function approveAppointment(apptId) {
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status: 'approved' })
+    .eq('id', apptId)
+
+  if (error) {
+    alert('Approve failed: ' + error.message)
+    return
+  }
+  loadPending()
+  loadToday()
+}
+
+async function cancelAppointmentWithNote(apptId) {
+  const note = prompt('Enter a reason for cancelling this appointment:')
+  if (!note || !note.trim()) {
+    alert('A cancellation note is required.')
+    return
+  }
+
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status: 'cancelled', cancellation_note: note.trim() })
+    .eq('id', apptId)
+
+  if (error) {
+    alert('Cancel failed: ' + error.message)
+    return
+  }
+  loadPending()
+  loadToday()
+}
+
+// ---------------------------------------------------------
+// TODAY'S APPROVED APPOINTMENTS
+// ---------------------------------------------------------
+async function loadToday() {
+  const el = document.getElementById('todayList')
+  el.innerHTML = 'Loading...'
+
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select(`
+      id, assigned_time, reason, status,
+      doctor_slots!inner ( doctor_id, date, shift ),
+      patients ( id, full_name )
+    `)
+    .eq('doctor_slots.doctor_id', currentUser.id)
+    .gte('doctor_slots.date', todayStr)
+    .eq('status', 'approved')
+    .order('date', { ascending: true, referencedTable: 'doctor_slots' })
+    .order('assigned_time', { ascending: true })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading upcoming appointments.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No upcoming approved appointments.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(appt => {
+    const div = document.createElement('div')
+    const patientName = appt.patients ? appt.patients.full_name : 'Unknown patient'
+    const slotDate = appt.doctor_slots ? appt.doctor_slots.date : '?'
+    const shift = appt.doctor_slots ? appt.doctor_slots.shift.toUpperCase() : '?'
+    div.textContent = `${slotDate} (${shift}) | Time: ${appt.assigned_time} | ${patientName} | Reason: ${appt.reason}  `
+
+    const completeBtn = document.createElement('button')
+    completeBtn.textContent = 'Complete Consultation'
+    completeBtn.addEventListener('click', () => openConsultForm(appt))
+
+    div.appendChild(completeBtn)
+    el.appendChild(div)
+  })
+}
+
+document.getElementById('refreshTodayBtn').addEventListener('click', loadToday)
+
+// ---------------------------------------------------------
+// APPOINTMENT HISTORY (completed / missed / cancelled)
+// ---------------------------------------------------------
+async function loadHistory() {
+  const el = document.getElementById('historyList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select(`
+      id, assigned_time, reason, status, advice_to_patient, cancellation_note,
+      doctor_slots!inner ( doctor_id, date, shift ),
+      patients ( id, full_name )
+    `)
+    .eq('doctor_slots.doctor_id', currentUser.id)
+    .in('status', ['completed', 'missed', 'cancelled'])
+    .order('date', { ascending: false, referencedTable: 'doctor_slots' })
+    .order('assigned_time', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading appointment history.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No past appointments yet.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(appt => {
+    const div = document.createElement('div')
+    const patientName = appt.patients ? appt.patients.full_name : 'Unknown patient'
+    const slotDate = appt.doctor_slots ? appt.doctor_slots.date : '?'
+    const shift = appt.doctor_slots ? appt.doctor_slots.shift.toUpperCase() : '?'
+    let text = `${slotDate} (${shift}) | Time: ${appt.assigned_time} | ${patientName} | Status: ${appt.status} | Reason: ${appt.reason}`
+    if (appt.status === 'cancelled' && appt.cancellation_note) {
+      text += ` | Cancel note: ${appt.cancellation_note}`
+    }
+    if (appt.status === 'completed' && appt.advice_to_patient) {
+      text += ` | Advice: ${appt.advice_to_patient}`
+    }
+    div.textContent = text
+    el.appendChild(div)
+  })
+}
+
+document.getElementById('refreshHistoryBtn').addEventListener('click', loadHistory)
+
+// ---------------------------------------------------------
+// DRUG STOCK (for prescription picker)
+// ---------------------------------------------------------
+async function loadDrugStock() {
+  const { data, error } = await supabase
+    .from('drug_stock')
+    .select('id, drug_name, unit, quantity, price')
+    .order('drug_name', { ascending: true })
+
+  if (!error && data) {
+    drugStockCache = data
+  }
+}
+
+function buildDrugRow() {
+  const row = document.createElement('div')
+  row.className = 'drugRow'
+
+  const select = document.createElement('select')
+  const noneOpt = document.createElement('option')
+  noneOpt.value = ''
+  noneOpt.textContent = '-- select drug --'
+  select.appendChild(noneOpt)
+  drugStockCache.forEach(drug => {
+    const opt = document.createElement('option')
+    opt.value = drug.id
+    opt.textContent = `${drug.drug_name} (${drug.unit}) - stock: ${drug.quantity} - price: ${drug.price}`
+    select.appendChild(opt)
+  })
+
+  const dosageInput = document.createElement('input')
+  dosageInput.placeholder = 'Dosage'
+  const freqInput = document.createElement('input')
+  freqInput.placeholder = 'Frequency'
+  const durationInput = document.createElement('input')
+  durationInput.placeholder = 'Duration'
+  const qtyInput = document.createElement('input')
+  qtyInput.type = 'number'
+  qtyInput.min = '1'
+  qtyInput.placeholder = 'Quantity'
+
+  const removeBtn = document.createElement('button')
+  removeBtn.textContent = 'Remove'
+  removeBtn.addEventListener('click', () => row.remove())
+
+  row.appendChild(select)
+  row.appendChild(dosageInput)
+  row.appendChild(freqInput)
+  row.appendChild(durationInput)
+  row.appendChild(qtyInput)
+  row.appendChild(removeBtn)
+
+  row._drugSelect = select
+  row._dosageInput = dosageInput
+  row._freqInput = freqInput
+  row._durationInput = durationInput
+  row._qtyInput = qtyInput
+
+  return row
+}
+
+document.getElementById('addDrugRowBtn').addEventListener('click', () => {
+  document.getElementById('drugPickerList').appendChild(buildDrugRow())
+})
+
+// ---------------------------------------------------------
+// CONSULTATION FORM
+// ---------------------------------------------------------
+function openConsultForm(appt) {
+  activeConsultApptId = appt.id
+  const patientName = appt.patients ? appt.patients.full_name : 'Unknown patient'
+  document.getElementById('consultApptInfo').textContent = `Patient: ${patientName} | Reason: ${appt.reason}`
+  document.getElementById('adviceInput').value = ''
+  document.getElementById('medicalRecordInput').value = ''
+  document.getElementById('externalDrugsInput').value = ''
+  document.getElementById('consultResult').textContent = ''
+
+  const drugPickerList = document.getElementById('drugPickerList')
+  drugPickerList.innerHTML = ''
+  drugPickerList.appendChild(buildDrugRow())
+
+  document.getElementById('consultForm').style.display = 'block'
+}
+
+document.getElementById('cancelConsultBtn').addEventListener('click', () => {
+  activeConsultApptId = null
+  document.getElementById('consultForm').style.display = 'none'
+})
+
+document.getElementById('submitConsultBtn').addEventListener('click', async () => {
+  const resultEl = document.getElementById('consultResult')
+
+  if (!activeConsultApptId) {
+    resultEl.textContent = 'No appointment selected.'
+    return
+  }
+
+  const advice = document.getElementById('adviceInput').value.trim()
+  const medicalRecord = document.getElementById('medicalRecordInput').value.trim()
+  const externalNote = document.getElementById('externalDrugsInput').value.trim()
+
+  if (!advice) {
+    resultEl.textContent = 'Please enter advice to patient.'
+    return
+  }
+
+  // gather prescription items from the drug picker rows
+  const rows = Array.from(document.getElementById('drugPickerList').children)
+  const items = []
+  for (const row of rows) {
+    const drugId = row._drugSelect.value
+    if (!drugId) continue // skip empty rows
+    const dosage = row._dosageInput.value.trim()
+    const frequency = row._freqInput.value.trim()
+    const duration = row._durationInput.value.trim()
+    const qty = parseInt(row._qtyInput.value, 10)
+
+    if (!dosage || !frequency || !duration || !qty || qty <= 0) {
+      resultEl.textContent = 'Please fill in dosage, frequency, duration, and a valid quantity for every drug row.'
+      return
+    }
+
+    const drugInfo = drugStockCache.find(d => d.id === drugId)
+    items.push({
+      drug_id: drugId,
+      dosage,
+      frequency,
+      duration,
+      quantity: qty,
+      price_at_time: drugInfo ? drugInfo.price : 0
+    })
+  }
+
+  // find the patient_id for this appointment
+  const { data: apptRow, error: apptErr } = await supabase
+    .from('appointments')
+    .select('patient_id')
+    .eq('id', activeConsultApptId)
+    .single()
+
+  if (apptErr || !apptRow) {
+    resultEl.textContent = 'Could not load appointment: ' + (apptErr ? apptErr.message : 'not found')
+    return
+  }
+
+  // 1. mark appointment completed with advice + medical record
+  const { error: updateErr } = await supabase
+    .from('appointments')
+    .update({
+      status: 'completed',
+      advice_to_patient: advice,
+      medical_record: medicalRecord || null
+    })
+    .eq('id', activeConsultApptId)
+
+  if (updateErr) {
+    resultEl.textContent = 'Failed to complete appointment: ' + updateErr.message
+    return
+  }
+
+  // 2. create the prescription record (even if no in-stock items, for external-only case)
+  const { data: presc, error: prescErr } = await supabase
+    .from('prescriptions')
+    .insert({
+      appointment_id: activeConsultApptId,
+      doctor_id: currentUser.id,
+      patient_id: apptRow.patient_id,
+      external_drugs_note: externalNote || null
+    })
+    .select('id')
+    .single()
+
+  if (prescErr || !presc) {
+    resultEl.textContent = 'Consultation saved, but prescription creation failed: ' + (prescErr ? prescErr.message : 'unknown error')
+    return
+  }
+
+  // 3. insert prescription items, if any
+  if (items.length > 0) {
+    const itemsToInsert = items.map(it => ({ ...it, prescription_id: presc.id }))
+    const { error: itemsErr } = await supabase
+      .from('prescription_items')
+      .insert(itemsToInsert)
+
+    if (itemsErr) {
+      resultEl.textContent = 'Consultation saved, but adding drug items failed: ' + itemsErr.message
+      return
+    }
+
+    // 4. auto-create the payment for in-stock drugs
+    const { error: paymentErr } = await supabase.rpc('create_payment_for_prescription', {
+      p_prescription_id: presc.id
+    })
+
+    if (paymentErr) {
+      resultEl.textContent = 'Consultation saved, but payment creation failed: ' + paymentErr.message
+      return
+    }
+  }
+
+  resultEl.textContent = 'Consultation completed and prescription saved successfully.'
+  activeConsultApptId = null
+  setTimeout(() => {
+    document.getElementById('consultForm').style.display = 'none'
+    loadToday()
+  }, 1200)
+})
+
+// ---------------------------------------------------------
+// PATIENT HISTORY LOOKUP (continuity of care)
+// ---------------------------------------------------------
+document.getElementById('searchPatientBtn').addEventListener('click', async () => {
+  const query = document.getElementById('patientSearchInput').value.trim()
+  const resultsEl = document.getElementById('patientSearchResults')
+  document.getElementById('patientHistory').innerHTML = ''
+
+  if (!query) {
+    resultsEl.innerHTML = 'Enter a name or email to search.'
+    return
+  }
+
+  resultsEl.innerHTML = 'Searching...'
+
+  const { data, error } = await supabase
+    .from('patients')
+    .select('id, full_name, email')
+    .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
+    .limit(10)
+
+  if (error || !data) {
+    resultsEl.innerHTML = 'Error searching patients.'
+    return
+  }
+  if (data.length === 0) {
+    resultsEl.innerHTML = 'No matching patients found.'
+    return
+  }
+
+  resultsEl.innerHTML = ''
+  data.forEach(p => {
+    const div = document.createElement('div')
+    div.textContent = `${p.full_name} (${p.email})  `
+    const viewBtn = document.createElement('button')
+    viewBtn.textContent = 'View History'
+    viewBtn.addEventListener('click', () => loadPatientHistory(p.id, p.full_name))
+    div.appendChild(viewBtn)
+    resultsEl.appendChild(div)
+  })
+})
+
+async function loadPatientHistory(patientId, patientName) {
+  const el = document.getElementById('patientHistory')
+  el.innerHTML = 'Loading history for ' + patientName + '...'
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, assigned_time, reason, status, advice_to_patient, medical_record, created_at')
+    .eq('patient_id', patientId)
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading history.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No appointment history for this patient.'
+    return
+  }
+
+  el.innerHTML = `<h4>History for ${patientName}</h4>`
+  data.forEach(appt => {
+    const div = document.createElement('div')
+    let text = `${new Date(appt.created_at).toLocaleDateString()} | Status: ${appt.status} | Reason: ${appt.reason}`
+    if (appt.advice_to_patient) text += ` | Advice: ${appt.advice_to_patient}`
+    if (appt.medical_record) text += ` | Medical record: ${appt.medical_record}`
+    div.textContent = text
+    el.appendChild(div)
+  })
+}
+
+// ---------------------------------------------------------
+// GO
+// ---------------------------------------------------------
+init()
+</script>
+
+</body>
+</html>
