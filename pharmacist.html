@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pharmacist Dashboard</title>
+</head>
+<body>
+
+<h1>Pharmacist Dashboard</h1>
+<p id="welcomeMsg">Loading...</p>
+<button id="logoutBtn">Logout</button>
+
+<hr>
+
+<div id="changePasswordScreen" style="display:none;">
+  <h2>You Must Change Your Password</h2>
+  <p>For security, please set a new password before continuing.</p>
+  <p>New Password:<br><input id="newPasswordInput" type="password"></p>
+  <p>Confirm New Password:<br><input id="confirmPasswordInput" type="password"></p>
+  <button id="submitNewPasswordBtn">Set New Password</button>
+  <p id="changePasswordResult"></p>
+</div>
+
+<div id="dashboardContent" style="display:none;">
+
+<h2>Overview</h2>
+<p id="overviewStats">Loading...</p>
+
+<hr>
+
+<h2>Low Stock Alerts</h2>
+<button id="refreshLowStockBtn">Refresh</button>
+<div id="lowStockList">Loading...</div>
+
+<hr>
+
+<h2>Stock Management</h2>
+<button id="refreshStockBtn">Refresh</button>
+<div id="stockList">Loading...</div>
+
+<h3>Add New Drug</h3>
+<p>Drug Name:<br><input id="newDrugName" type="text"></p>
+<p>Unit (e.g. tablet, bottle):<br><input id="newDrugUnit" type="text"></p>
+<p>Quantity:<br><input id="newDrugQty" type="number" min="0"></p>
+<p>Price (per unit):<br><input id="newDrugPrice" type="number" min="0" step="0.01"></p>
+<p>Reorder Threshold:<br><input id="newDrugThreshold" type="number" min="0" value="10"></p>
+<button id="addDrugBtn">Add Drug</button>
+<p id="addDrugResult"></p>
+
+<hr>
+
+<h2>Prescriptions — Awaiting Payment</h2>
+<button id="refreshAwaitingBtn">Refresh</button>
+<div id="awaitingList">Loading...</div>
+
+<hr>
+
+<h2>Prescriptions — Ready to Dispense</h2>
+<button id="refreshReadyBtn">Refresh</button>
+<div id="readyList">Loading...</div>
+
+<hr>
+
+<h2>Prescriptions — Dispensed (History)</h2>
+<button id="refreshDispensedBtn">Refresh</button>
+<div id="dispensedList">Loading...</div>
+
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const SUPABASE_URL = 'https://qseuseqkzvnlqsartkoq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXVzZXFrenZubHFzYXJ0a29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjcwMTcsImV4cCI6MjA5OTIwMzAxN30.49UXm0BhbHy6oEAYRTJjddiRB3VsrVg-jkgmAa2fEH4'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+let currentUser = null
+
+// ---------------------------------------------------------
+// INIT / AUTH CHECK
+// ---------------------------------------------------------
+async function init() {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session) {
+    window.location.href = 'index.html'
+    return
+  }
+
+  currentUser = session.user
+
+  // confirm role is pharmacist
+  const { data: roleRow, error: roleErr } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (roleErr || !roleRow || roleRow.role !== 'pharmacist') {
+    window.location.href = 'index.html'
+    return
+  }
+
+  // load pharmacist profile
+  const { data: pharmacist } = await supabase
+    .from('pharmacists')
+    .select('full_name, is_active, must_change_password')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (pharmacist && pharmacist.is_active === false) {
+    document.body.innerHTML = '<h1>Account Deactivated</h1><p>Your account has been deactivated. Please contact the hospital admin for assistance.</p>'
+    await supabase.auth.signOut()
+    return
+  }
+
+  if (pharmacist) {
+    document.getElementById('welcomeMsg').textContent = 'Welcome, ' + pharmacist.full_name
+  }
+
+  if (pharmacist && pharmacist.must_change_password === true) {
+    document.getElementById('changePasswordScreen').style.display = 'block'
+    document.getElementById('dashboardContent').style.display = 'none'
+    return
+  }
+
+  document.getElementById('dashboardContent').style.display = 'block'
+
+  loadOverview()
+  loadLowStock()
+  loadStock()
+  loadAwaiting()
+  loadReady()
+  loadDispensed()
+}
+
+document.getElementById('submitNewPasswordBtn').addEventListener('click', async () => {
+  const result = document.getElementById('changePasswordResult')
+  const newPass = document.getElementById('newPasswordInput').value
+  const confirmPass = document.getElementById('confirmPasswordInput').value
+
+  if (!newPass || newPass.length < 6) {
+    result.textContent = 'Password must be at least 6 characters.'
+    return
+  }
+  if (newPass !== confirmPass) {
+    result.textContent = 'Passwords do not match.'
+    return
+  }
+
+  result.textContent = 'Updating password...'
+
+  const { error: updateAuthErr } = await supabase.auth.updateUser({ password: newPass })
+
+  if (updateAuthErr) {
+    result.textContent = 'Error: ' + updateAuthErr.message
+    return
+  }
+
+  const { error: updateFlagErr } = await supabase
+    .from('pharmacists')
+    .update({ must_change_password: false })
+    .eq('id', currentUser.id)
+
+  if (updateFlagErr) {
+    result.textContent = 'Password updated but failed to clear flag: ' + updateFlagErr.message
+    return
+  }
+
+  result.textContent = 'Password updated successfully! Loading dashboard...'
+  document.getElementById('changePasswordScreen').style.display = 'none'
+  document.getElementById('dashboardContent').style.display = 'block'
+
+  loadOverview()
+  loadLowStock()
+  loadStock()
+  loadAwaiting()
+  loadReady()
+  loadDispensed()
+})
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut()
+  window.location.href = 'index.html'
+})
+
+// ---------------------------------------------------------
+// OVERVIEW COUNTS
+// ---------------------------------------------------------
+async function loadOverview() {
+  const el = document.getElementById('overviewStats')
+  el.textContent = 'Loading...'
+
+  const { count: awaitingCount } = await supabase
+    .from('prescriptions')
+    .select('id, payments!inner(status)', { count: 'exact', head: true })
+    .eq('status', 'active')
+    .neq('payments.status', 'paid')
+
+  const { count: readyCount } = await supabase
+    .from('prescriptions')
+    .select('id, payments!inner(status)', { count: 'exact', head: true })
+    .eq('status', 'active')
+    .eq('payments.status', 'paid')
+
+  const { count: lowStockCount } = await supabase
+    .from('drug_stock')
+    .select('id', { count: 'exact', head: true })
+
+  const { data: allStock } = await supabase
+    .from('drug_stock')
+    .select('quantity, reorder_threshold')
+
+  let lowCount = 0
+  if (allStock) {
+    lowCount = allStock.filter(d => d.quantity <= d.reorder_threshold).length
+  }
+
+  el.textContent = `Awaiting Payment: ${awaitingCount ?? 0} | Ready to Dispense: ${readyCount ?? 0} | Low Stock Items: ${lowCount}`
+}
+
+// ---------------------------------------------------------
+// LOW STOCK ALERTS
+// ---------------------------------------------------------
+async function loadLowStock() {
+  const el = document.getElementById('lowStockList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('drug_stock')
+    .select('id, drug_name, unit, quantity, reorder_threshold')
+    .order('quantity', { ascending: true })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading stock.'
+    return
+  }
+
+  const lowItems = data.filter(d => d.quantity <= d.reorder_threshold)
+
+  if (lowItems.length === 0) {
+    el.innerHTML = 'No low-stock items right now.'
+    return
+  }
+
+  el.innerHTML = ''
+  lowItems.forEach(drug => {
+    const div = document.createElement('div')
+    div.textContent = `⚠ ${drug.drug_name} | Qty: ${drug.quantity} ${drug.unit} | Reorder Threshold: ${drug.reorder_threshold}`
+    el.appendChild(div)
+  })
+}
+
+document.getElementById('refreshLowStockBtn').addEventListener('click', loadLowStock)
+
+// ---------------------------------------------------------
+// STOCK MANAGEMENT (list + edit)
+// ---------------------------------------------------------
+async function loadStock() {
+  const el = document.getElementById('stockList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('drug_stock')
+    .select('id, drug_name, unit, quantity, price, reorder_threshold')
+    .order('drug_name', { ascending: true })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading drug stock.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No drugs in stock yet.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(drug => {
+    const div = document.createElement('div')
+    div.textContent = `${drug.drug_name} | Unit: ${drug.unit} | Qty: ${drug.quantity} | Price: ${drug.price} | Reorder at: ${drug.reorder_threshold}  `
+
+    const qtyInput = document.createElement('input')
+    qtyInput.type = 'number'
+    qtyInput.min = '0'
+    qtyInput.placeholder = 'New qty'
+    qtyInput.style.width = '80px'
+
+    const priceInput = document.createElement('input')
+    priceInput.type = 'number'
+    priceInput.min = '0'
+    priceInput.step = '0.01'
+    priceInput.placeholder = 'New price'
+    priceInput.style.width = '80px'
+
+    const thresholdInput = document.createElement('input')
+    thresholdInput.type = 'number'
+    thresholdInput.min = '0'
+    thresholdInput.placeholder = 'New threshold'
+    thresholdInput.style.width = '90px'
+
+    const updateBtn = document.createElement('button')
+    updateBtn.textContent = 'Update'
+    updateBtn.addEventListener('click', () => updateDrug(drug.id, qtyInput.value, priceInput.value, thresholdInput.value))
+
+    div.appendChild(qtyInput)
+    div.appendChild(priceInput)
+    div.appendChild(thresholdInput)
+    div.appendChild(updateBtn)
+    el.appendChild(div)
+  })
+}
+
+async function updateDrug(drugId, qtyVal, priceVal, thresholdVal) {
+  const updates = {}
+  if (qtyVal !== '') updates.quantity = parseInt(qtyVal)
+  if (priceVal !== '') updates.price = parseFloat(priceVal)
+  if (thresholdVal !== '') updates.reorder_threshold = parseInt(thresholdVal)
+
+  if (Object.keys(updates).length === 0) {
+    alert('Enter at least one field to update.')
+    return
+  }
+
+  const { error } = await supabase
+    .from('drug_stock')
+    .update(updates)
+    .eq('id', drugId)
+
+  if (error) {
+    alert('Error updating drug: ' + error.message)
+    return
+  }
+
+  loadStock()
+  loadLowStock()
+  loadOverview()
+}
+
+document.getElementById('refreshStockBtn').addEventListener('click', loadStock)
+
+document.getElementById('addDrugBtn').addEventListener('click', async () => {
+  const result = document.getElementById('addDrugResult')
+  const name = document.getElementById('newDrugName').value.trim()
+  const unit = document.getElementById('newDrugUnit').value.trim()
+  const qty = parseInt(document.getElementById('newDrugQty').value)
+  const price = parseFloat(document.getElementById('newDrugPrice').value)
+  const threshold = parseInt(document.getElementById('newDrugThreshold').value)
+
+  if (!name || !unit || isNaN(qty) || isNaN(price) || isNaN(threshold)) {
+    result.textContent = 'Please fill in all fields correctly.'
+    return
+  }
+
+  const { error } = await supabase
+    .from('drug_stock')
+    .insert({ drug_name: name, unit: unit, quantity: qty, price: price, reorder_threshold: threshold })
+
+  if (error) {
+    result.textContent = 'Error adding drug: ' + error.message
+    return
+  }
+
+  result.textContent = 'Drug added successfully.'
+  document.getElementById('newDrugName').value = ''
+  document.getElementById('newDrugUnit').value = ''
+  document.getElementById('newDrugQty').value = ''
+  document.getElementById('newDrugPrice').value = ''
+  document.getElementById('newDrugThreshold').value = '10'
+
+  loadStock()
+  loadLowStock()
+  loadOverview()
+})
+
+// ---------------------------------------------------------
+// PRESCRIPTIONS — AWAITING PAYMENT
+// ---------------------------------------------------------
+async function loadAwaiting() {
+  const el = document.getElementById('awaitingList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('prescriptions')
+    .select(`
+      id, external_drugs_note, created_at,
+      patients ( full_name ),
+      payments!inner ( status, amount, payment_code ),
+      prescription_items ( id, dosage, frequency, duration, quantity, drug_stock ( drug_name ) )
+    `)
+    .eq('status', 'active')
+    .neq('payments.status', 'paid')
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading prescriptions.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No prescriptions awaiting payment.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(presc => renderPrescriptionRow(el, presc, 'awaiting'))
+}
+
+document.getElementById('refreshAwaitingBtn').addEventListener('click', loadAwaiting)
+
+// ---------------------------------------------------------
+// PRESCRIPTIONS — READY TO DISPENSE
+// ---------------------------------------------------------
+async function loadReady() {
+  const el = document.getElementById('readyList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('prescriptions')
+    .select(`
+      id, external_drugs_note, created_at,
+      patients ( full_name ),
+      payments!inner ( status, amount, payment_code ),
+      prescription_items ( id, dosage, frequency, duration, quantity, drug_stock ( drug_name ) )
+    `)
+    .eq('status', 'active')
+    .eq('payments.status', 'paid')
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading prescriptions.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No prescriptions ready to dispense.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(presc => renderPrescriptionRow(el, presc, 'ready'))
+}
+
+document.getElementById('refreshReadyBtn').addEventListener('click', loadReady)
+
+// ---------------------------------------------------------
+// PRESCRIPTIONS — DISPENSED (HISTORY)
+// ---------------------------------------------------------
+async function loadDispensed() {
+  const el = document.getElementById('dispensedList')
+  el.innerHTML = 'Loading...'
+
+  const { data, error } = await supabase
+    .from('prescriptions')
+    .select(`
+      id, external_drugs_note, created_at,
+      patients ( full_name ),
+      payments ( status, amount, payment_code ),
+      prescription_items ( id, dosage, frequency, duration, quantity, drug_stock ( drug_name ) )
+    `)
+    .eq('status', 'dispensed')
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    el.innerHTML = 'Error loading dispensed prescriptions.'
+    return
+  }
+  if (data.length === 0) {
+    el.innerHTML = 'No dispensed prescriptions yet.'
+    return
+  }
+
+  el.innerHTML = ''
+  data.forEach(presc => renderPrescriptionRow(el, presc, 'dispensed'))
+}
+
+document.getElementById('refreshDispensedBtn').addEventListener('click', loadDispensed)
+
+// ---------------------------------------------------------
+// SHARED ROW RENDERER FOR PRESCRIPTION LISTS
+// ---------------------------------------------------------
+function renderPrescriptionRow(container, presc, mode) {
+  const div = document.createElement('div')
+
+  const patientName = presc.patients ? presc.patients.full_name : 'Unknown patient'
+  const amount = presc.payments ? presc.payments.amount : 0
+  const payStatus = presc.payments ? presc.payments.status : 'unknown'
+  const payCode = presc.payments && presc.payments.payment_code ? presc.payments.payment_code : (presc.payments ? 'no code' : 'no payment yet')
+
+  let itemsText = presc.prescription_items.map(item => {
+    const drugName = item.drug_stock ? item.drug_stock.drug_name : 'Unknown drug'
+    return `${drugName} (${item.dosage}, ${item.frequency}, ${item.duration}, qty ${item.quantity})`
+  }).join('; ')
+
+  if (!itemsText) itemsText = 'No in-stock items'
+
+  let text = `${payCode} | ${patientName} | Amount: ${amount} | Payment: ${payStatus} | Items: ${itemsText}`
+  if (presc.external_drugs_note) {
+    text += ` | External drugs: ${presc.external_drugs_note}`
+  }
+
+  div.textContent = text
+
+  if (mode === 'ready') {
+    const dispenseBtn = document.createElement('button')
+    dispenseBtn.textContent = 'Dispense'
+    dispenseBtn.addEventListener('click', () => dispensePrescription(presc.id))
+    div.appendChild(dispenseBtn)
+  }
+
+  if (mode === 'awaiting') {
+    const lockedBtn = document.createElement('button')
+    lockedBtn.textContent = 'Dispense (locked — payment not confirmed)'
+    lockedBtn.disabled = true
+    div.appendChild(lockedBtn)
+  }
+
+  container.appendChild(div)
+}
+
+async function dispensePrescription(prescriptionId) {
+  const { error } = await supabase.rpc('dispense_prescription', {
+    p_prescription_id: prescriptionId
+  })
+
+  if (error) {
+    if (error.message.includes('PAYMENT_NOT_CONFIRMED')) {
+      alert('Cannot dispense: payment not confirmed as paid yet.')
+    } else if (error.message.includes('INSUFFICIENT_STOCK')) {
+      alert('Cannot dispense: insufficient stock for one or more items. Restock fully before dispensing.')
+    } else {
+      alert('Error dispensing: ' + error.message)
+    }
+    return
+  }
+
+  alert('Prescription dispensed successfully.')
+  loadReady()
+  loadDispensed()
+  loadStock()
+  loadLowStock()
+  loadOverview()
+}
+
+init()
+</script>
+
+</body>
+</html>
