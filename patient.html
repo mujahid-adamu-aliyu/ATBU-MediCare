@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FUD Health Centre — Patient Dashboard</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('fud-patient-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
+<style>
+:root{
+  --primary:#0D6B4E; --primary-mid:#0F9B6E; --primary-light:#10B981;
+  --bg:#F0FDF4; --panel-bg:#FFFFFF; --neu-bg:#FFFFFF;
+  --neu-shadow-d:#c6e6d6; --neu-shadow-l:#ffffff;
+  --text:#0F172A; --text-muted:#64748B;
+  --input-bg:#FFFFFF; --input-border:#CBD5E1; --input-bg-err:#FEF2F2;
+  --card-border:rgba(255,255,255,0.80); --card-border-solid:#CBD5E1;
+  --success:#10B981; --error:#EF4444; --info:#2563EB; --white:#FFFFFF;
+  --shadow-rgb:13,107,78;
+  --radius-card:20px; --radius-input:12px; --radius-btn:999px;
+  --overlay-grad:linear-gradient(150deg,#10B981 0%,#0D6B4E 100%);
+  --brand-grad:linear-gradient(135deg,#10B981 0%,#0D6B4E 100%);
+  --content-max:1200px;
+}
+[data-theme="dark"]{
+  --primary:#2ECC8F; --primary-mid:#1AB87A; --primary-light:#4DD9A3;
+  --bg:#0D1F18; --panel-bg:#172A1E; --neu-bg:#0F1C15;
+  --neu-shadow-d:#060e09; --neu-shadow-l:#1a2e20;
+  --text:#E6F4EC; --text-muted:#7AAF90;
+  --input-bg:#0D1F18; --input-border:#2D4A3A; --input-bg-err:#2A1018;
+  --card-border:rgba(255,255,255,0.18); --card-border-solid:#2D4A3A;
+  --success:#2ECC8F; --error:#F87171; --info:#60A5FA; --white:#E6F4EC;
+  --shadow-rgb:46,204,143;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+.drawer-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;}
+html,body{background:var(--bg);color:var(--text);font-family:'Poppins',sans-serif;min-height:100vh;transition:background 250ms ease,color 250ms ease}
+body{overflow-x:hidden}
+.blob{position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none}
+.blob1{width:500px;height:500px;background:rgba(16,185,129,0.12);top:-150px;left:-150px;animation:blobDrift1 22s ease-in-out infinite alternate}
+.blob2{width:420px;height:420px;background:rgba(var(--shadow-rgb),0.10);bottom:-120px;right:-120px;filter:blur(80px);animation:blobDrift2 18s ease-in-out infinite alternate}
+@keyframes blobDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(120px,80px) scale(1.15)}}
+@keyframes blobDrift2{0%{transform:translate(0,0) scale(1.1)}100%{transform:translate(-100px,-60px) scale(1)}}
+
+#authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-size:20px;color:var(--text-muted);gap:14px;position:relative;z-index:1;padding:20px;text-align:center}
+#authScreen .spin{font-size:36px;color:var(--primary);animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.layout{position:relative;z-index:1}
+.topbar-shell{position:fixed;top:0;left:0;right:0;z-index:90;max-width:var(--content-max);margin:12px auto 0;padding-inline:clamp(16px,3vw,32px);pointer-events:none}
+.topbar{position:relative;width:100%;padding:10px clamp(20px,4vw,36px);background:color-mix(in srgb, var(--panel-bg) 78%, transparent);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.12);display:flex;align-items:center;gap:14px;pointer-events:auto}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:42px;height:42px;border-radius:10px;background:var(--brand-grad);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.35);border:2.5px solid #0D6B4E;color:#fff;font-size:22px}
+.brand-name{font-weight:800;font-size:13px;color:var(--text);line-height:1.1}
+.brand-sub{font-size:10px;color:var(--text-muted);font-weight:500;margin-top:2px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer;font-size:18px;transition:all 180ms ease}
+.icon-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.18)}
+.logout-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);font:600 13px 'Poppins';cursor:pointer;transition:all 180ms ease}
+.logout-btn:hover{background:rgba(239,68,68,0.18)}
+.desktop-logout-btn{display:inline-flex}
+@media(max-width:768px){.desktop-logout-btn{display:none}}
+.hamburger{display:none}
+
+.topnav-strip-wrapper{position:fixed;top:78px;z-index:89;left:0;right:0;max-width:var(--content-max);margin:14px auto 0;padding-inline:clamp(64px,10vw,120px);pointer-events:none}
+.topnav-strip-outer{padding:14px 16px;background:color-mix(in srgb, var(--panel-bg) 78%, transparent);backdrop-filter:blur(14px) saturate(160%);border:1.5px solid var(--card-border-solid);border-radius:24px;box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.08);pointer-events:auto}
+.topnav-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.nav-item{display:flex;align-items:center;justify-content:center;gap:9px;padding:0 16px;min-height:44px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:999px;color:var(--text-muted);font:700 13px 'Poppins',sans-serif;opacity:.6;cursor:pointer;transition:all 200ms ease}
+.nav-item i{font-size:18px}
+.nav-item:hover{opacity:.9;transform:translateY(-1px)}
+.nav-item.active{color:#fff;border-color:transparent;background:var(--brand-grad);box-shadow:0 6px 20px rgba(var(--shadow-rgb),0.40);opacity:1}
+
+.main{max-width:var(--content-max);margin:0 auto 60px;padding:clamp(24px,5vw,60px) clamp(64px,10vw,120px);padding-top:var(--main-top-offset,200px);position:relative;z-index:1}
+.page{display:none}
+.page.active{display:block;animation:fadeUp 360ms ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.page-title{font-size:26px;font-weight:800;color:var(--text);margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.page-title::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--brand-grad)}
+
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:36px}
+.stat-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:22px 24px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 6px rgba(0,0,0,0.04),0 10px 24px rgba(var(--shadow-rgb),0.08);position:relative;overflow:hidden;transition:transform 200ms ease,box-shadow 200ms ease}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brand-grad);opacity:.35;transition:opacity 200ms ease}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 6px 10px rgba(0,0,0,0.06),0 14px 32px rgba(var(--shadow-rgb),0.14)}
+.stat-card:hover::before{opacity:1}
+.stat-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);font-size:22px;flex-shrink:0}
+.stat-icon.amber{background:linear-gradient(135deg,rgba(245,158,11,0.18),rgba(245,158,11,0.08));border-color:rgba(245,158,11,0.25);color:#F59E0B}
+.stat-meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;color:var(--text-muted)}
+.stat-value{font-size:30px;font-weight:800;color:var(--text);line-height:1}
+
+.followup-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:18px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 4px 6px rgba(0,0,0,0.04),0 10px 24px rgba(var(--shadow-rgb),0.08);position:relative;overflow:hidden}
+.followup-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--brand-grad)}
+.followup-icon{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);font-size:20px}
+.followup-body{flex:1;min-width:180px}
+.followup-title{font-weight:700;font-size:14px;color:var(--text)}
+.followup-sub{font-size:12.5px;color:var(--text-muted);margin-top:2px}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:15px;font-weight:700;color:var(--text)}
+
+.btn-primary{background:var(--brand-grad);color:#fff;border:none;border-radius:999px;padding:10px 20px;font:600 13px 'Poppins';box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.35);cursor:pointer;transition:all 180ms ease;display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.45)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--panel-bg);color:var(--text);border:1.5px solid var(--card-border-solid);border-radius:999px;padding:10px 20px;font:600 13px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 180ms ease}
+.btn-secondary:hover{background:color-mix(in srgb, var(--primary) 6%, var(--panel-bg))}
+.btn-danger{background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);border-radius:999px;padding:8px 16px;font:600 12px 'Poppins';cursor:pointer;transition:all 180ms ease}
+.btn-danger:hover{background:rgba(239,68,68,0.20)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+.table-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);overflow:hidden;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:rgba(var(--shadow-rgb),0.06);padding:12px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);font-weight:700;border-bottom:1.5px solid var(--card-border-solid);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--card-border-solid);color:var(--text);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+tr:last-child td{border-bottom:none}
+tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.6)}
+tbody tr:nth-child(even) td{background:rgba(16,185,129,0.04)}
+[data-theme="dark"] tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.02)}
+[data-theme="dark"] tbody tr:nth-child(even) td{background:rgba(46,204,143,0.05)}
+tbody tr:hover td{background:rgba(var(--shadow-rgb),0.08) !important}
+td.cell-id{font-family:monospace;font-weight:600;color:var(--primary);font-size:12.5px}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge.pending,.badge.unpaid{color:#F59E0B;background:rgba(245,158,11,0.12)}
+.badge.approved,.badge.active,.badge.paid{color:#0F9B6E;background:rgba(16,185,129,0.12)}
+.badge.cancelled,.badge.missed{color:#EF4444;background:rgba(239,68,68,0.12)}
+.badge.completed,.badge.dispensed,.badge.pending_verification{color:#2563EB;background:rgba(37,99,235,0.12)}
+
+.form-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;margin-bottom:24px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.form-wrap-collapsible{overflow:hidden;max-height:0;opacity:0;transform:translateY(-8px);transition:max-height 380ms cubic-bezier(0.34,1.1,0.64,1),opacity 280ms ease,transform 300ms cubic-bezier(0.34,1.1,0.64,1),margin 280ms ease;margin-bottom:0;padding-top:0;padding-bottom:0}
+.form-wrap-collapsible.open{max-height:900px;opacity:1;transform:translateY(0);margin-bottom:24px;padding-top:24px;padding-bottom:24px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.form-field{display:flex;flex-direction:column;min-width:0}
+.form-field.full{grid-column:1 / -1}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;transition:border-color 180ms ease,box-shadow 180ms ease}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15);outline:none}
+.form-textarea{min-height:90px;resize:vertical}
+.form-actions{margin-top:20px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.disclaimer{font-size:12px;color:var(--text-muted);font-style:italic;margin-top:12px}
+
+.state-box{text-align:center;padding:48px 24px;color:var(--text-muted);font-size:14px}
+.state-box i{font-size:36px;display:block;margin-bottom:10px;color:var(--text-muted);opacity:.7}
+
+/* Slot cards */
+.slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:8px}
+.slot-card{background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all 180ms ease;position:relative}
+.slot-card:hover:not(.disabled){border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.15)}
+.slot-card.selected{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg));box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.20)}
+.slot-card.disabled{opacity:.5;cursor:not-allowed}
+.slot-date{font-weight:700;font-size:13px;color:var(--text)}
+.slot-shift{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.slot-spots{font-size:12px;color:var(--primary);font-weight:600;margin-top:2px}
+
+/* Prescription card grid */
+.rx-list{display:flex;flex-direction:column;gap:14px}
+.rx-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:18px 22px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.rx-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.rx-meta{font-size:12px;color:var(--text-muted)}
+.rx-items{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.rx-item{background:var(--neu-bg);border:1px solid var(--card-border-solid);border-radius:12px;padding:10px 14px;font-size:13px}
+.rx-item strong{color:var(--text);font-weight:700}
+.rx-item .rx-item-meta{color:var(--text-muted);font-size:12px;margin-top:3px}
+.rx-external{margin-top:10px;padding:10px 14px;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.25);border-radius:12px;color:#B45309;font-size:12.5px}
+
+.pagination-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-wrap:wrap;gap:10px}
+.pagination-info{font-size:12px;color:var(--text-muted)}
+.pagination{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.page-pill{min-width:34px;height:34px;padding:0 10px;border-radius:999px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font:600 12px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 180ms ease}
+.page-pill:hover:not(:disabled){color:var(--text);transform:translateY(-1px)}
+.page-pill.active{background:var(--brand-grad);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.30)}
+.page-pill:disabled{opacity:.4;cursor:not-allowed}
+
+#toastContainer{position:fixed;top:0;left:50%;transform:translateX(-50%);max-width:var(--content-max);width:calc(100% - 48px);display:flex;flex-direction:column;gap:10px;padding-top:16px;z-index:9999;pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:10px 38px 10px 12px;background:var(--panel-bg);border-radius:14px;border-left:4px solid var(--text-muted);box-shadow:0 16px 40px rgba(15,23,42,0.18),0 2px 8px rgba(15,23,42,0.08);position:relative;overflow:hidden;opacity:0;transform:translateY(-120%);animation:toastDropIn 650ms cubic-bezier(0.34,1.56,0.64,1) forwards}
+@keyframes toastDropIn{0%{opacity:0;transform:translateY(-120%)}60%{opacity:1;transform:translateY(8%)}80%{transform:translateY(-4%)}100%{opacity:1;transform:translateY(0)}}
+@media(max-width:640px){#toastContainer{width:calc(100% - 24px)}}
+.toast.t-success{border-left-color:var(--success)}
+.toast.t-error{border-left-color:var(--error)}
+.toast.t-info{border-left-color:var(--info)}
+.toast-icon{flex-shrink:0;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font-size:1rem}
+.toast.t-success .toast-icon{background:rgba(16,185,129,0.14);color:var(--success)}
+.toast.t-error .toast-icon{background:rgba(239,68,68,0.14);color:var(--error)}
+.toast.t-info .toast-icon{background:rgba(37,99,235,0.14);color:var(--info)}
+.toast-body{min-width:0}
+.toast-title{font-size:13px;font-weight:700;color:var(--text)}
+.toast-msg{font-size:12px;color:var(--text-muted);line-height:1.4}
+.toast-close{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;color:var(--text-muted)}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.45);backdrop-filter:blur(10px);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 200ms ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1)}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px}
+.modal-msg{font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+
+.receipt-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:32px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1)}
+.receipt-head{text-align:center;margin-bottom:20px;padding-bottom:18px;border-bottom:2px dashed var(--card-border-solid)}
+.receipt-head h2{font-size:20px;font-weight:800;color:var(--primary);margin-bottom:4px}
+.receipt-head p{font-size:12px;color:var(--text-muted)}
+.receipt-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px dashed var(--card-border-solid);gap:12px}
+.receipt-row strong{color:var(--text);font-weight:600}
+.receipt-row span{color:var(--text-muted);text-align:right;word-break:break-all}
+.receipt-amount{font-size:22px;font-weight:800;color:var(--primary);text-align:center;margin:18px 0;padding:14px;background:rgba(16,185,129,0.08);border-radius:14px}
+
+.drawer-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.35);backdrop-filter:blur(10px);z-index:95;opacity:0;visibility:hidden;transition:opacity 280ms ease,visibility 280ms ease}
+.drawer-backdrop.open{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(86vw,320px);background:var(--panel-bg);border-left:1px solid var(--card-border);border-top-left-radius:24px;border-bottom-left-radius:24px;box-shadow:-20px 0 50px rgba(0,0,0,0.25);transform:translateX(110%);transition:transform 380ms cubic-bezier(0.34,1.2,0.64,1);z-index:96;display:flex;flex-direction:column;padding:24px}
+.drawer.open{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.drawer-nav{display:flex;flex-direction:column;gap:8px;padding:14px 4px;overflow-y:auto;flex:1}
+.drawer-nav .nav-item{justify-content:flex-start;width:100%;border-radius:999px;padding:12px 16px;min-height:0;font-size:14px;font-weight:500;background:var(--bg);border:none;color:var(--text);box-shadow:none;opacity:1 !important}
+.drawer-nav .nav-item:hover,.drawer-nav .nav-item.active{background:var(--brand-grad);color:#fff}
+.drawer-foot{padding-top:14px;border-top:1px solid var(--card-border-solid)}
+
+.custom-select-wrap{position:relative;width:100%;font-family:'Poppins',sans-serif;z-index:1}
+.custom-select-wrap.open{z-index:100}
+.custom-select-trigger{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:border-color 180ms ease,box-shadow 180ms ease;text-align:left}
+.custom-select-trigger:hover{border-color:var(--primary)}
+.custom-select-wrap.open .custom-select-trigger{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15)}
+.custom-select-trigger .cs-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-select-trigger .cs-label.placeholder{color:var(--text-muted)}
+.custom-select-trigger .cs-caret{transition:transform 200ms ease;color:var(--text-muted);font-size:16px}
+.custom-select-wrap.open .cs-caret{transform:rotate(180deg)}
+.custom-select-options{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.18);padding:6px;z-index:200;max-height:0;overflow:hidden;opacity:0;transform:translateY(-6px) scaleY(0.96);transform-origin:top center;transition:max-height 240ms cubic-bezier(0.34,1.2,0.64,1),opacity 200ms ease,transform 220ms cubic-bezier(0.34,1.2,0.64,1),padding 200ms ease;pointer-events:none}
+.custom-select-wrap.open .custom-select-options{max-height:260px;overflow-y:auto;opacity:1;transform:translateY(0) scaleY(1);pointer-events:auto}
+.cs-option{padding:10px 12px;border-radius:8px;font:500 13px 'Poppins',sans-serif;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background 140ms ease}
+.cs-option:hover{background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg))}
+.cs-option.active{color:var(--primary);font-weight:700;background:color-mix(in srgb, var(--primary) 10%, var(--panel-bg))}
+.cs-option.disabled{color:var(--text-muted);cursor:not-allowed;opacity:.7}
+
+/* Auth (login) card */
+.auth-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:32px;max-width:400px;width:100%;box-shadow:0 24px 60px rgba(var(--shadow-rgb),0.15)}
+.auth-head{text-align:center;margin-bottom:22px}
+.auth-head h1{font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px}
+.auth-head p{font-size:13px;color:var(--text-muted)}
+
+@media (max-width: 768px){
+  .topnav-strip-wrapper{display:none}
+  .hamburger{display:flex}
+  .stat-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .form-grid{grid-template-columns:1fr}
+  .topbar-shell{margin:8px 10px 0;padding-inline:0;max-width:none}
+  .main{padding:clamp(16px,4vw,32px);padding-top:var(--main-top-offset,90px)}
+  .page-title{font-size:20px}
+  .brand-name{font-size:12px}
+}
+@media (max-width: 480px){
+  .stat-grid{grid-template-columns:1fr}
+  .top-right .logout-btn span{display:none}
+}
+</style>
+</head>
+<body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div id="authScreen"><i class="ph ph-spinner spin"></i><span>Verifying session…</span></div>
+
+<!-- LOGIN SCREEN (shown if no session) -->
+<div id="loginScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1">
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="brand-icon" style="margin:0 auto 14px"><i class="ph-fill ph-hospital"></i></div>
+      <h1>FUD Health Centre</h1>
+      <p>Sign in to your patient account</p>
+    </div>
+    <form id="loginForm">
+      <div class="form-field" style="margin-bottom:14px">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="loginEmail" required autocomplete="email" />
+      </div>
+      <div class="form-field" style="margin-bottom:18px">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="loginPassword" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn-primary" id="loginBtn" style="width:100%;justify-content:center;padding:12px"><i class="ph ph-sign-in"></i> Sign In</button>
+    </form>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="layout">
+    <div class="topbar-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-icon"><i class="ph-fill ph-hospital"></i></div>
+          <div>
+            <div class="brand-name">FUD Health Centre</div>
+            <div class="brand-sub" id="welcomeMsg">Loading…</div>
+          </div>
+        </div>
+        <div class="top-right">
+          <button class="icon-btn" id="themeBtn" title="Toggle theme"><i class="ph ph-moon" id="themeIcon"></i></button>
+          <button class="logout-btn desktop-logout-btn" id="topbarLogoutBtn"><i class="ph ph-sign-out"></i> <span>Sign Out</span></button>
+          <button class="icon-btn hamburger" id="hamburgerBtn" title="Menu"><i class="ph ph-list"></i></button>
+        </div>
+      </header>
+    </div>
+
+    <div class="topnav-strip-wrapper" id="desktopNavWrapper">
+      <div class="topnav-strip-outer">
+        <nav class="topnav-strip" id="topnav"></nav>
+      </div>
+    </div>
+
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <aside class="drawer" id="drawer">
+      <div class="drawer-head">
+        <div class="brand">
+          <div class="brand-icon"><i class="ph-fill ph-hospital"></i></div>
+          <div><span class="drawer-title">Navigation</span></div>
+        </div>
+        <button class="icon-btn" id="drawerCloseBtn"><i class="ph ph-x"></i></button>
+      </div>
+      <nav class="drawer-nav" id="drawerNav"></nav>
+      <div class="drawer-foot">
+        <button class="logout-btn" id="drawerLogoutBtn" style="justify-content:center;width:100%;padding:12px"><i class="ph ph-sign-out"></i> Log Out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <h1 class="page-title" style="margin-bottom:0">Patient Dashboard</h1>
+          <button class="icon-btn" id="dashRefreshBtn" title="Refresh"><i class="ph ph-arrow-clockwise" id="dashRefreshIcon"></i></button>
+        </div>
+        <div class="stat-grid" id="statGrid"></div>
+        <div id="upcomingSection" style="margin-bottom:28px">
+          <div class="section-header"><div class="section-title"><i class="ph-fill ph-calendar-plus" style="color:var(--primary);margin-right:6px"></i>Upcoming Appointment</div></div>
+          <div id="upcomingApptWrap"><div class="state-box">Loading…</div></div>
+        </div>
+        <div class="section-header">
+          <div class="section-title">Recent Appointments</div>
+          <button class="btn-secondary btn-sm" data-jump="appointments">View All <i class="ph ph-arrow-right"></i></button>
+        </div>
+        <div class="table-wrap"><div class="table-scroll" id="recentApptsWrap"><div class="state-box">Loading…</div></div></div>
+      </div>
+
+      <!-- APPOINTMENTS -->
+      <div class="page" id="page-appointments">
+        <h1 class="page-title">My Appointments</h1>
+        <div class="section-header">
+          <div class="section-title">All Appointments</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div id="apptFilter" class="custom-select-wrap" data-cs data-cs-default="all" style="min-width:180px"></div>
+            <button class="btn-primary" id="toggleApptForm"><i class="ph ph-plus"></i> Book Appointment</button>
+          </div>
+        </div>
+        <div class="form-wrap form-wrap-collapsible" id="apptFormWrap">
+          <form id="apptForm">
+            <div class="form-grid">
+              <div class="form-field full">
+                <label class="form-label">Doctor</label>
+                <div id="apptDoctor" class="custom-select-wrap" data-cs data-cs-placeholder="Select a doctor…"></div>
+              </div>
+            </div>
+            <div class="form-actions" style="margin-top:14px;justify-content:flex-start">
+              <button type="button" class="btn-secondary" id="loadSlotsBtn"><i class="ph ph-calendar-dots"></i> View Available Shifts</button>
+            </div>
+            <div id="slotsWrap" style="margin-top:14px;display:none">
+              <label class="form-label">Available Shifts</label>
+              <div id="slotsList" class="slots-grid"></div>
+            </div>
+            <div id="reasonWrap" style="margin-top:14px;display:none">
+              <div class="form-field full">
+                <label class="form-label">Reason for Visit</label>
+                <textarea class="form-textarea" id="reasonInput" placeholder="Describe your reason for visit" required></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" id="apptCancelBtn">Cancel</button>
+              <button type="submit" class="btn-primary" id="confirmBookingBtn" disabled><i class="ph ph-check"></i> Confirm Booking</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <div class="table-scroll" id="apptTableWrap"><div class="state-box">Loading…</div></div>
+          <div class="pagination-wrap"><div class="pagination-info" id="apptPagInfo"></div><div class="pagination" id="apptPag"></div></div>
+        </div>
+      </div>
+
+      <!-- PRESCRIPTIONS -->
+      <div class="page" id="page-prescriptions">
+        <h1 class="page-title">My Prescriptions</h1>
+        <div class="section-header"><div class="section-title">All Prescriptions</div></div>
+        <div id="rxListWrap"><div class="state-box">Loading…</div></div>
+      </div>
+
+      <!-- PAYMENTS -->
+      <div class="page" id="page-payments">
+        <h1 class="page-title">Payments</h1>
+        <div class="section-header"><div class="section-title">All Payments</div></div>
+        <div class="table-wrap">
+          <div class="table-scroll" id="payTableWrap"><div class="state-box">Loading…</div></div>
+          <div class="pagination-wrap"><div class="pagination-info" id="payPagInfo"></div><div class="pagination" id="payPag"></div></div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="page" id="page-profile">
+        <h1 class="page-title">My Profile</h1>
+        <div class="form-wrap">
+          <form id="profileForm">
+            <div class="form-grid">
+              <div class="form-field"><label class="form-label">Full Name</label><input type="text" class="form-input" id="profName" /></div>
+              <div class="form-field"><label class="form-label">Email</label><input type="email" class="form-input" id="profEmail" disabled readonly /></div>
+              <div class="form-field"><label class="form-label">Phone</label><input type="tel" class="form-input" id="profPhone" /></div>
+              <div class="form-field"><label class="form-label">Date of Birth</label><input type="date" class="form-input" id="profDob" /></div>
+              <div class="form-field"><label class="form-label">Gender</label><div id="gender" class="custom-select-wrap" data-cs data-cs-placeholder="Select…"></div></div>
+              <div class="form-field full"><label class="form-label">Address</label><textarea class="form-textarea" id="profAddress"></textarea></div>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn-primary"><i class="ph ph-floppy-disk"></i> Save Profile</button></div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const SUPABASE_URL = 'https://qseuseqkzvnlqsartkoq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXVzZXFrenZubHFzYXJ0a29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjcwMTcsImV4cCI6MjA5OTIwMzAxN30.49UXm0BhbHy6oEAYRTJjddiRB3VsrVg-jkgmAa2fEH4'
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+let currentUser = null
+let currentProfile = null
+let selectedSlot = null
+let selectedSlotMeta = null
+const PAGE_SIZE = 10
+let apptPage = 1, apptFilter = 'all'
+let payPage = 1
+
+/* =============== NAV =============== */
+const NAV_ITEMS = [
+  { tab:'dashboard',     label:'Dashboard',     icon:'ph-squares-four' },
+  { tab:'appointments',  label:'Appointments',  icon:'ph-calendar-check' },
+  { tab:'prescriptions', label:'Prescriptions', icon:'ph-prescription' },
+  { tab:'payments',      label:'Payments',      icon:'ph-currency-ngn' },
+  { tab:'profile',       label:'My Profile',    icon:'ph-user-circle' },
+]
+function renderNav(){
+  const top = document.getElementById('topnav')
+  const drw = document.getElementById('drawerNav')
+  const html = NAV_ITEMS.map((n,i) => `<button class="nav-item ${i===0?'active':''}" data-tab="${n.tab}"><i class="ph ${n.icon}"></i> ${n.label}</button>`).join('')
+  top.innerHTML = html; drw.innerHTML = html
+  document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', () => switchTab(el.dataset.tab)))
+}
+
+/* =============== HELPERS =============== */
+function escHtml(s){ if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function emptyIcon(){ return '<i class="ph ph-minus-circle" style="color:var(--text-muted);opacity:.5;font-size:16px"></i>' }
+function formatDate(d){ if(!d) return emptyIcon(); const dt=new Date(d); if(isNaN(dt)) return escHtml(d); return dt.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) }
+function formatDateTime(d){ if(!d) return emptyIcon(); const dt=new Date(d); if(isNaN(dt)) return escHtml(d); return dt.toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) }
+function formatCurrency(n){ const v = Number(n||0); return '₦' + v.toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function badge(status){ if(!status) return emptyIcon(); const s = String(status).toLowerCase(); return `<span class="badge ${escHtml(s)}">${escHtml(s.replace(/_/g,' '))}</span>` }
+
+function buildTable(columns, rows, opts={}){
+  if (!rows || rows.length === 0) return `<div class="state-box"><i class="ph ph-tray"></i>${opts.emptyText||'No records found.'}</div>`
+  const thead = '<thead><tr>' + columns.map(c => `<th>${escHtml(c.label)}</th>`).join('') + '</tr></thead>'
+  const tbody = '<tbody>' + rows.map(r => '<tr>' + columns.map(c => {
+    let v = c.render ? c.render(r) : (c.badge ? badge(r[c.key]) : escHtml(r[c.key]))
+    return `<td${c.cellClass?' class="'+c.cellClass+'"':''}>${v}</td>`
+  }).join('') + '</tr>').join('') + '</tbody>'
+  return `<table>${thead}${tbody}</table>`
+}
+
+function buildPagination(pagEl, infoEl, currentPage, pageSize, totalCount, loadFn){
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+  const from = totalCount === 0 ? 0 : (currentPage-1)*pageSize + 1
+  const to = Math.min(currentPage*pageSize, totalCount)
+  infoEl.textContent = totalCount === 0 ? 'No results' : `Showing ${from}–${to} of ${totalCount}`
+  let html = `<button class="page-pill" ${currentPage===1?'disabled':''} data-p="${currentPage-1}"><i class="ph ph-caret-left"></i></button>`
+  const maxShow = 5; let start = Math.max(1, currentPage - 2); let end = Math.min(totalPages, start + maxShow - 1); start = Math.max(1, end - maxShow + 1)
+  for (let i = start; i <= end; i++) html += `<button class="page-pill ${i===currentPage?'active':''}" data-p="${i}">${i}</button>`
+  html += `<button class="page-pill" ${currentPage===totalPages?'disabled':''} data-p="${currentPage+1}"><i class="ph ph-caret-right"></i></button>`
+  pagEl.innerHTML = html
+  pagEl.querySelectorAll('.page-pill[data-p]').forEach(btn => btn.addEventListener('click', () => {
+    const p = parseInt(btn.dataset.p,10); if (!isNaN(p) && p >= 1 && p <= totalPages) loadFn(p)
+  }))
+}
+
+/* =============== TOAST =============== */
+function showToast(type, title, message){
+  const wrap = document.getElementById('toastContainer')
+  const t = document.createElement('div')
+  t.className = `toast t-${type}`
+  const icons = { success:'ph-fill ph-check-circle', error:'ph-fill ph-x-circle', info:'ph-fill ph-info' }
+  t.innerHTML = `<div class="toast-icon"><i class="${icons[type]||icons.info}"></i></div><div class="toast-body"><div class="toast-title">${escHtml(title)}</div><div class="toast-msg">${escHtml(message)}</div></div><button class="toast-close"><i class="ph ph-x"></i></button>`
+  const remove = () => t.remove()
+  t.querySelector('.toast-close').addEventListener('click', remove)
+  wrap.appendChild(t)
+  setTimeout(remove, 4500)
+}
+
+/* =============== CONFIRM =============== */
+function showConfirm(title, message, confirmLabel='Confirm'){
+  return new Promise(resolve => {
+    const bd = document.createElement('div')
+    bd.className = 'modal-backdrop'
+    bd.innerHTML = `<div class="modal-card"><div class="modal-title">${escHtml(title)}</div><div class="modal-msg">${escHtml(message)}</div><div class="modal-actions"><button class="btn-secondary" data-act="cancel">Cancel</button><button class="btn-danger" data-act="ok" style="padding:10px 20px;font-size:13px">${escHtml(confirmLabel)}</button></div></div>`
+    document.body.appendChild(bd)
+    const close = v => { bd.remove(); resolve(v) }
+    bd.addEventListener('click', e => { if (e.target === bd) close(false) })
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false))
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => close(true))
+  })
+}
+
+/* =============== THEME =============== */
+function applyThemeIcon(){ const t = document.documentElement.getAttribute('data-theme'); const ic = document.getElementById('themeIcon'); if (ic) ic.className = t === 'dark' ? 'ph ph-sun' : 'ph ph-moon' }
+function toggleTheme(){ const cur = document.documentElement.getAttribute('data-theme') || 'light'; const nxt = cur === 'light' ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', nxt); try { localStorage.setItem('fud-patient-theme', nxt) } catch(e){}; applyThemeIcon() }
+
+/* =============== DRAWER =============== */
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('drawerBackdrop').classList.add('open'); document.body.style.overflow = 'hidden' }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('drawerBackdrop').classList.remove('open'); document.body.style.overflow = '' }
+
+/* =============== CUSTOM SELECT =============== */
+const CS_STATE = {}
+document.addEventListener('click', e => { if (!e.target.closest('.custom-select-wrap')) document.querySelectorAll('.custom-select-wrap.open').forEach(w => w.classList.remove('open')) })
+function _csRender(id){
+  const wrap = document.getElementById(id); const st = CS_STATE[id]; if (!wrap || !st) return
+  const sel = st.options.find(o => String(o.value) === String(st.value))
+  const labelText = sel ? sel.label : (st.placeholder || 'Select…'); const cls = sel ? '' : ' placeholder'
+  const opts = st.options.length ? st.options.map(o => `<div class="cs-option${String(o.value)===String(st.value)?' active':''}${o.disabled?' disabled':''}" data-v="${escHtml(o.value)}">${escHtml(o.label)}${String(o.value)===String(st.value)?'<i class="ph ph-check"></i>':''}</div>`).join('') : '<div class="cs-option disabled">No options</div>'
+  wrap.innerHTML = `<button type="button" class="custom-select-trigger"><span class="cs-label${cls}">${escHtml(labelText)}</span><i class="ph ph-caret-down cs-caret"></i></button><div class="custom-select-options">${opts}</div>`
+  wrap.querySelector('.custom-select-trigger').addEventListener('click', e => { e.stopPropagation(); const isOpen = wrap.classList.contains('open'); document.querySelectorAll('.custom-select-wrap.open').forEach(w => { if (w.id !== id) w.classList.remove('open') }); wrap.classList.toggle('open', !isOpen) })
+  wrap.querySelectorAll('.cs-option').forEach(opt => { if (opt.classList.contains('disabled')) return; opt.addEventListener('click', e => { e.stopPropagation(); const v = opt.dataset.v; setCS(id, v); wrap.classList.remove('open'); if (st.onChange) st.onChange(v) }) })
+}
+function initCS(id, options, opts={}){ const wrap = document.getElementById(id); if (!wrap) return; CS_STATE[id] = { options: options || [], value: opts.value !== undefined ? opts.value : (wrap.dataset.csDefault || ''), placeholder: opts.placeholder || wrap.dataset.csPlaceholder || 'Select…', onChange: opts.onChange || null }; _csRender(id) }
+function popCS(id, options){ if (!CS_STATE[id]) initCS(id, options); else { CS_STATE[id].options = options || []; if (!options.find(o => String(o.value) === String(CS_STATE[id].value))) CS_STATE[id].value = ''; _csRender(id) } }
+function getCS(id){ return CS_STATE[id]?.value || '' }
+function setCS(id, v){ if (!CS_STATE[id]) return; CS_STATE[id].value = v == null ? '' : String(v); _csRender(id) }
+
+/* =============== AUTH =============== */
+async function init(){
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session){ showLogin(); return }
+  currentUser = session.user
+
+  const { data: roleRow, error: roleErr } = await supabase.from('user_roles').select('role').eq('id', currentUser.id).single()
+  if (roleErr || !roleRow || roleRow.role !== 'patient'){
+    await supabase.auth.signOut()
+    showToast('error','Access denied','This account is not a patient account.')
+    showLogin(); return
+  }
+
+  const { data: patient } = await supabase.from('patients').select('*').eq('id', currentUser.id).single()
+  if (patient && patient.is_active === false){
+    await supabase.auth.signOut()
+    document.getElementById('authScreen').style.display = 'none'
+    document.getElementById('loginScreen').style.display = 'none'
+    document.getElementById('app').style.display = 'none'
+    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:Poppins,sans-serif"><div><h1 style="color:#EF4444;font-size:26px;margin-bottom:10px">Account Deactivated</h1><p style="color:#64748B">Your account has been deactivated. Please contact the hospital admin.</p></div></div>'
+    return
+  }
+  currentProfile = patient
+
+  document.getElementById('authScreen').style.display = 'none'
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+  document.getElementById('welcomeMsg').textContent = patient ? `Welcome, ${patient.full_name}` : 'Welcome'
+
+  renderNav()
+  applyThemeIcon()
+  updateMainTopOffset(); setTimeout(updateMainTopOffset, 300)
+
+  initCS('apptFilter', [
+    {value:'all',label:'All Statuses'},{value:'pending',label:'Pending'},{value:'approved',label:'Approved'},
+    {value:'completed',label:'Completed'},{value:'cancelled',label:'Cancelled'},{value:'missed',label:'Missed'},
+  ], { value:'all', onChange:v => { apptFilter = v; loadAppointments(1) } })
+  initCS('apptDoctor', [], { onChange: () => { document.getElementById('slotsWrap').style.display='none'; document.getElementById('reasonWrap').style.display='none'; selectedSlot = null; document.getElementById('confirmBookingBtn').disabled = true } })
+  initCS('gender', [{value:'male',label:'Male'},{value:'female',label:'Female'}])
+
+  initDashboard()
+}
+
+function showLogin(){
+  document.getElementById('authScreen').style.display = 'none'
+  document.getElementById('app').style.display = 'none'
+  document.getElementById('loginScreen').style.display = 'flex'
+}
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault()
+  const btn = document.getElementById('loginBtn')
+  const email = document.getElementById('loginEmail').value.trim()
+  const password = document.getElementById('loginPassword').value
+  btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '<i class="ph ph-spinner spin"></i> Signing in…'
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  btn.disabled = false; btn.innerHTML = orig
+  if (error){ showToast('error','Sign in failed', error.message); return }
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('authScreen').style.display = 'flex'
+  init()
+})
+
+async function doLogout(){
+  const ok = await showConfirm('Sign Out','Are you sure you want to sign out?','Sign Out')
+  if (!ok) return
+  await supabase.auth.signOut()
+  location.reload()
+}
+
+/* =============== TAB SWITCH =============== */
+function switchTab(tabName){
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tabName))
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  const target = document.getElementById('page-'+tabName); if (target) target.classList.add('active')
+  closeDrawer()
+  switch(tabName){
+    case 'dashboard': initDashboard(); break
+    case 'appointments': initAppointments(); break
+    case 'prescriptions': loadPrescriptions(); break
+    case 'payments': loadPayments(1); break
+    case 'profile': initProfile(); break
+  }
+}
+
+/* =============== DASHBOARD =============== */
+async function initDashboard(){
+  const grid = document.getElementById('statGrid')
+  grid.innerHTML = ''
+  const [apptAll, apptPending, rxActive, payUnpaid] = await Promise.all([
+    supabase.from('appointments').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id),
+    supabase.from('appointments').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id).in('status', ['pending','approved']),
+    supabase.from('prescriptions').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id).eq('status','active'),
+    supabase.from('payments').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id).eq('status','unpaid'),
+  ])
+  const stats = [
+    { label:'My Appointments', icon:'ph-calendar-check', amber:false, value: apptAll.count ?? 0 },
+    { label:'Upcoming Appointments', icon:'ph-clock', amber:true, value: apptPending.count ?? 0 },
+    { label:'Active Prescriptions', icon:'ph-prescription', amber:false, value: rxActive.count ?? 0 },
+    { label:'Unpaid Payments', icon:'ph-warning-circle', amber:true, value: payUnpaid.count ?? 0 },
+  ]
+  grid.innerHTML = stats.map(s => `<div class="stat-card"><div class="stat-icon ${s.amber?'amber':''}"><i class="ph-fill ${s.icon}"></i></div><div class="stat-meta"><div class="stat-label">${s.label}</div><div class="stat-value">${s.value}</div></div></div>`).join('')
+
+  // Upcoming appointment
+  const upWrap = document.getElementById('upcomingApptWrap')
+  const { data: up } = await supabase.from('appointments').select('id, appointment_code, assigned_time, status, reason').eq('patient_id', currentUser.id).in('status', ['pending','approved']).order('assigned_time', { ascending: true }).limit(1)
+  if (!up || up.length === 0){
+    upWrap.innerHTML = `<div class="followup-card"><div class="followup-icon"><i class="ph ph-calendar-slash"></i></div><div class="followup-body"><div class="followup-title">No upcoming appointments</div><div class="followup-sub">Book an appointment to see it here.</div></div></div>`
+  } else {
+    const a = up[0]
+    upWrap.innerHTML = `<div class="followup-card"><div class="followup-icon"><i class="ph-fill ph-calendar-check"></i></div><div class="followup-body"><div class="followup-title">${escHtml(a.appointment_code || a.id)} — ${badge(a.status)}</div><div class="followup-sub">${formatDateTime(a.assigned_time)} · ${escHtml(a.reason || '')}</div></div></div>`
+  }
+
+  // Recent appointments
+  const wrap = document.getElementById('recentApptsWrap')
+  const { data: recent } = await supabase.from('appointments').select('id, appointment_code, assigned_time, status, reason').eq('patient_id', currentUser.id).order('created_at', { ascending:false }).limit(5)
+  wrap.innerHTML = buildTable([
+    { label:'Ref', render:r => `<span class="cell-id">${escHtml(r.appointment_code||r.id.slice(0,8))}</span>` },
+    { label:'Scheduled', render:r => formatDateTime(r.assigned_time) },
+    { label:'Reason', render:r => escHtml(r.reason||'') },
+    { label:'Status', render:r => badge(r.status) },
+  ], recent || [], { emptyText:'No appointments yet.' })
+}
+
+/* =============== APPOINTMENTS =============== */
+async function initAppointments(){
+  apptPage = 1
+  const { data: doctors } = await supabase.from('doctors').select('id, full_name, licence_number').eq('is_active', true)
+  popCS('apptDoctor', (doctors||[]).map(d => ({ value:d.id, label:`${d.full_name} (${d.licence_number})` })))
+  loadAppointments(1)
+}
+
+async function loadAppointments(page){
+  apptPage = page
+  const wrap = document.getElementById('apptTableWrap')
+  wrap.innerHTML = '<div class="state-box">Loading…</div>'
+  let q = supabase.from('appointments').select('id, appointment_code, assigned_time, reason, status, cancellation_note, advice_to_patient', { count:'exact' }).eq('patient_id', currentUser.id)
+  if (apptFilter !== 'all') q = q.eq('status', apptFilter)
+  q = q.order('created_at', { ascending:false }).range((page-1)*PAGE_SIZE, page*PAGE_SIZE - 1)
+  const { data, count, error } = await q
+  if (error){ wrap.innerHTML = `<div class="state-box"><i class="ph ph-warning"></i>${escHtml(error.message)}</div>`; return }
+  wrap.innerHTML = buildTable([
+    { label:'Ref', render:r => `<span class="cell-id">${escHtml(r.appointment_code||r.id.slice(0,8))}</span>` },
+    { label:'Scheduled', render:r => formatDateTime(r.assigned_time) },
+    { label:'Reason', render:r => escHtml(r.reason||'') },
+    { label:'Status', render:r => badge(r.status) },
+    { label:'Note', render:r => escHtml(r.cancellation_note || r.advice_to_patient || '') || emptyIcon() },
+    { label:'Actions', render:r => (r.status === 'pending' || r.status === 'approved') ? `<button class="btn-danger btn-sm" data-cancel="${escHtml(r.id)}"><i class="ph ph-x"></i> Cancel</button>` : `<span style="color:var(--text-muted);opacity:.5"><i class="ph ph-lock-simple"></i></span>` },
+  ], data || [], { emptyText:'No appointments found.' })
+  wrap.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelAppointment(b.dataset.cancel)))
+  buildPagination(document.getElementById('apptPag'), document.getElementById('apptPagInfo'), page, PAGE_SIZE, count || 0, loadAppointments)
+}
+
+async function cancelAppointment(id){
+  const ok = await showConfirm('Cancel Appointment','Are you sure you want to cancel this appointment?','Cancel Appointment')
+  if (!ok) return
+  const { error } = await supabase.from('appointments').update({ status:'cancelled', cancellation_note:'Cancelled by patient' }).eq('id', id).eq('patient_id', currentUser.id)
+  if (error){ showToast('error','Cancel failed', error.message); return }
+  showToast('success','Cancelled','Your appointment has been cancelled.')
+  loadAppointments(apptPage); initDashboard()
+}
+
+document.getElementById('loadSlotsBtn').addEventListener('click', async () => {
+  const doctorId = getCS('apptDoctor')
+  if (!doctorId){ showToast('error','Missing','Please select a doctor first.'); return }
+  const slotsWrap = document.getElementById('slotsWrap')
+  const slotsList = document.getElementById('slotsList')
+  slotsWrap.style.display = 'block'
+  slotsList.innerHTML = '<div class="state-box" style="grid-column:1/-1">Loading shifts…</div>'
+  const { data, error } = await supabase.from('doctor_slots').select('id, date, shift, capacity, booked_count').eq('doctor_id', doctorId).gte('date', new Date().toISOString().split('T')[0]).order('date',{ascending:true})
+  if (error){ slotsList.innerHTML = `<div class="state-box" style="grid-column:1/-1">${escHtml(error.message)}</div>`; return }
+  if (!data || data.length === 0){ slotsList.innerHTML = '<div class="state-box" style="grid-column:1/-1"><i class="ph ph-calendar-slash"></i>No available shifts.</div>'; return }
+  slotsList.innerHTML = ''
+  data.forEach(slot => {
+    const left = slot.capacity - slot.booked_count
+    const card = document.createElement('div')
+    card.className = 'slot-card' + (left <= 0 ? ' disabled' : '')
+    card.innerHTML = `<div class="slot-date">${formatDate(slot.date)}</div><div class="slot-shift"><i class="ph ${slot.shift==='night'?'ph-moon':'ph-sun'}"></i> ${escHtml(slot.shift)}</div><div class="slot-spots">${left > 0 ? left + ' spots left' : 'Full'}</div>`
+    if (left > 0){
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.slot-card').forEach(c => c.classList.remove('selected'))
+        card.classList.add('selected')
+        selectedSlot = slot.id
+        selectedSlotMeta = slot
+        document.getElementById('reasonWrap').style.display = 'block'
+        document.getElementById('confirmBookingBtn').disabled = false
+      })
+    }
+    slotsList.appendChild(card)
+  })
+})
+
+document.getElementById('apptForm').addEventListener('submit', async e => {
+  e.preventDefault()
+  const reason = document.getElementById('reasonInput').value.trim()
+  if (!selectedSlot){ showToast('error','Missing','Please select a shift.'); return }
+  if (!reason){ showToast('error','Missing','Please enter a reason for visit.'); return }
+  const btn = document.getElementById('confirmBookingBtn'); btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '<i class="ph ph-spinner spin"></i> Booking…'
+  const { data, error } = await supabase.rpc('book_appointment', { p_slot_id: selectedSlot, p_patient_id: currentUser.id, p_reason: reason })
+  btn.disabled = false; btn.innerHTML = orig
+  if (error){ showToast('error','Booking failed', error.message); return }
+  const { data: newAppt } = await supabase.from('appointments').select('appointment_code').eq('id', data).single()
+  const code = newAppt?.appointment_code || data
+  showToast('success','Booked!','Reference: ' + code)
+  // reset
+  document.getElementById('apptFormWrap').classList.remove('open')
+  document.getElementById('slotsWrap').style.display = 'none'
+  document.getElementById('reasonWrap').style.display = 'none'
+  document.getElementById('reasonInput').value = ''
+  selectedSlot = null; selectedSlotMeta = null
+  setCS('apptDoctor', '')
+  loadAppointments(1); initDashboard()
+})
+
+document.getElementById('toggleApptForm').addEventListener('click', () => {
+  document.getElementById('apptFormWrap').classList.toggle('open')
+})
+document.getElementById('apptCancelBtn').addEventListener('click', () => {
+  document.getElementById('apptFormWrap').classList.remove('open')
+})
+
+/* =============== PRESCRIPTIONS =============== */
+async function loadPrescriptions(){
+  const wrap = document.getElementById('rxListWrap')
+  wrap.innerHTML = '<div class="state-box">Loading…</div>'
+  const { data, error } = await supabase.from('prescriptions').select('id, status, external_drugs_note, created_at, prescription_items ( id, dosage, frequency, duration, quantity, price_at_time, drug_stock ( drug_name, unit ) )').eq('patient_id', currentUser.id).order('created_at',{ascending:false})
+  if (error){ wrap.innerHTML = `<div class="state-box"><i class="ph ph-warning"></i>${escHtml(error.message)}</div>`; return }
+  if (!data || data.length === 0){ wrap.innerHTML = '<div class="state-box"><i class="ph ph-prescription"></i>No prescriptions yet.</div>'; return }
+  wrap.innerHTML = '<div class="rx-list">' + data.map(p => {
+    const items = (p.prescription_items || []).map(it => {
+      const dn = it.drug_stock?.drug_name || 'External'
+      const unit = it.drug_stock?.unit || ''
+      return `<div class="rx-item"><strong>${escHtml(dn)}</strong> — ${escHtml(it.dosage||'')}<div class="rx-item-meta">${escHtml(it.frequency||'')} · ${escHtml(it.duration||'')} · Qty: ${escHtml(String(it.quantity||0))} ${escHtml(unit)} · ${formatCurrency(it.price_at_time)}</div></div>`
+    }).join('')
+    return `<div class="rx-card"><div class="rx-head"><div><div style="font-weight:700">Prescription</div><div class="rx-meta">${formatDate(p.created_at)}</div></div>${badge(p.status)}</div><div class="rx-items">${items || '<div class="state-box" style="padding:12px">No items</div>'}</div>${p.external_drugs_note ? `<div class="rx-external"><i class="ph ph-warning"></i> External drugs needed: ${escHtml(p.external_drugs_note)}</div>` : ''}</div>`
+  }).join('') + '</div>'
+}
+
+/* =============== PAYMENTS =============== */
+async function loadPayments(page){
+  payPage = page
+  const wrap = document.getElementById('payTableWrap')
+  wrap.innerHTML = '<div class="state-box">Loading…</div>'
+  const { data, count, error } = await supabase.from('payments').select('id, payment_code, amount, status, payment_method, payment_reference, created_at', { count:'exact' }).eq('patient_id', currentUser.id).order('created_at',{ascending:false}).range((page-1)*PAGE_SIZE, page*PAGE_SIZE - 1)
+  if (error){ wrap.innerHTML = `<div class="state-box"><i class="ph ph-warning"></i>${escHtml(error.message)}</div>`; return }
+  wrap.innerHTML = buildTable([
+    { label:'Ref', render:r => `<span class="cell-id">${escHtml(r.payment_code||r.id.slice(0,8))}</span>` },
+    { label:'Amount', render:r => formatCurrency(r.amount) },
+    { label:'Method', render:r => escHtml(r.payment_method || '') || emptyIcon() },
+    { label:'Reference', render:r => escHtml(r.payment_reference || '') || emptyIcon() },
+    { label:'Status', render:r => badge(r.status) },
+    { label:'Date', render:r => formatDateTime(r.created_at) },
+    { label:'Actions', render:r => {
+      if (r.status === 'unpaid') return `<button class="btn-primary btn-sm" data-pay="${escHtml(r.id)}"><i class="ph ph-credit-card"></i> Pay</button>`
+      if (r.status === 'paid') return `<button class="btn-secondary btn-sm" data-receipt='${escHtml(JSON.stringify({id:r.id,code:r.payment_code,amount:r.amount,method:r.payment_method,ref:r.payment_reference,date:r.created_at}))}'><i class="ph ph-receipt"></i> Receipt</button>`
+      return `<span style="color:var(--text-muted);font-size:11px">Awaiting verification</span>`
+    } },
+  ], data || [], { emptyText:'No payments yet.' })
+  wrap.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => openPayModal(b.dataset.pay, (data||[]).find(p => p.id === b.dataset.pay))))
+  wrap.querySelectorAll('[data-receipt]').forEach(b => b.addEventListener('click', () => showReceiptModal(JSON.parse(b.dataset.receipt))))
+  buildPagination(document.getElementById('payPag'), document.getElementById('payPagInfo'), page, PAGE_SIZE, count || 0, loadPayments)
+}
+
+function openPayModal(id, pay){
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-title">Submit Payment</div>
+      <div class="modal-msg">Amount: <strong>${formatCurrency(pay?.amount||0)}</strong><br>Enter your payment method and reference. Your submission will be verified by the pharmacy.</div>
+      <div class="form-field" style="margin-bottom:12px">
+        <label class="form-label">Payment Method</label>
+        <select class="form-input" id="modalMethod">
+          <option value="card">Card</option>
+          <option value="transfer">Bank Transfer</option>
+          <option value="cash_at_counter">Cash at Counter</option>
+        </select>
+      </div>
+      <div class="form-field" style="margin-bottom:16px">
+        <label class="form-label">Payment Reference</label>
+        <input class="form-input" id="modalRef" placeholder="e.g. TRX123456789" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-act="cancel">Cancel</button>
+        <button class="btn-primary" data-act="submit"><i class="ph ph-paper-plane-tilt"></i> Submit</button>
+      </div>
+    </div>`
+  document.body.appendChild(bd)
+  const close = () => bd.remove()
+  bd.addEventListener('click', e => { if (e.target === bd) close() })
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', close)
+  bd.querySelector('[data-act="submit"]').addEventListener('click', async () => {
+    const method = bd.querySelector('#modalMethod').value
+    const ref = bd.querySelector('#modalRef').value.trim()
+    if (!method || !ref){ showToast('error','Missing','Enter both method and reference.'); return }
+    const btn = bd.querySelector('[data-act="submit"]'); btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner spin"></i> Submitting…'
+    const { error } = await supabase.from('payments').update({ status:'pending_verification', payment_method: method, payment_reference: ref }).eq('id', id).eq('patient_id', currentUser.id)
+    if (error){ showToast('error','Submission failed', error.message); btn.disabled = false; btn.innerHTML = 'Submit'; return }
+    close()
+    showToast('success','Submitted','Your payment is awaiting verification.')
+    loadPayments(payPage); initDashboard()
+  })
+}
+
+function showReceiptModal({code, amount, method, ref, date}){
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.innerHTML = `<div class="receipt-card"><div class="receipt-head"><div class="brand-icon" style="margin:0 auto 10px"><i class="ph-fill ph-hospital"></i></div><h2>FUD Health Centre</h2><p>Federal University Dutse · Official Receipt</p></div>
+    <div class="receipt-row"><strong>Receipt No.</strong><span>${escHtml(code||'—')}</span></div>
+    <div class="receipt-row"><strong>Patient</strong><span>${escHtml(currentProfile?.full_name||'—')}</span></div>
+    <div class="receipt-row"><strong>Method</strong><span>${escHtml(method||'—')}</span></div>
+    <div class="receipt-row"><strong>Reference</strong><span>${escHtml(ref||'—')}</span></div>
+    <div class="receipt-row"><strong>Date</strong><span>${formatDateTime(date)}</span></div>
+    <div class="receipt-row"><strong>Status</strong><span style="color:var(--success);font-weight:700">PAID</span></div>
+    <div class="receipt-amount">${formatCurrency(amount)}</div>
+    <div class="modal-actions"><button class="btn-secondary" data-act="close">Close</button><button class="btn-primary" data-act="print"><i class="ph ph-printer"></i> Print</button></div>
+  </div>`
+  document.body.appendChild(bd)
+  bd.addEventListener('click', e => { if (e.target === bd) bd.remove() })
+  bd.querySelector('[data-act="close"]').addEventListener('click', () => bd.remove())
+  bd.querySelector('[data-act="print"]').addEventListener('click', () => window.print())
+}
+
+/* =============== PROFILE =============== */
+function initProfile(){
+  if (!currentProfile) return
+  document.getElementById('profName').value = currentProfile.full_name || ''
+  document.getElementById('profEmail').value = currentProfile.email || currentUser.email || ''
+  document.getElementById('profPhone').value = currentProfile.phone || ''
+  document.getElementById('profDob').value = currentProfile.dob || ''
+  setCS('gender', currentProfile.gender || '')
+  document.getElementById('profAddress').value = currentProfile.address || ''
+}
+document.getElementById('profileForm').addEventListener('submit', async e => {
+  e.preventDefault()
+  const payload = {
+    full_name: document.getElementById('profName').value.trim(),
+    phone: document.getElementById('profPhone').value.trim(),
+    dob: document.getElementById('profDob').value || null,
+    gender: getCS('gender'),
+    address: document.getElementById('profAddress').value.trim(),
+  }
+  if (!payload.full_name || !payload.phone || !payload.dob || !payload.gender || !payload.address){ showToast('error','Missing fields','All fields are required.'); return }
+  const { error } = await supabase.from('patients').update(payload).eq('id', currentUser.id)
+  if (error){ showToast('error','Save failed', error.message); return }
+  currentProfile = { ...currentProfile, ...payload }
+  document.getElementById('welcomeMsg').textContent = 'Welcome, ' + payload.full_name
+  showToast('success','Saved','Your profile has been updated.')
+})
+
+/* =============== LAYOUT OFFSET =============== */
+function updateMainTopOffset(){
+  const topbarShell = document.querySelector('.topbar-shell')
+  const navWrapper = document.getElementById('desktopNavWrapper')
+  let offset = 0
+  if (topbarShell){ const r = topbarShell.getBoundingClientRect(); offset = Math.max(offset, r.bottom) }
+  if (navWrapper && getComputedStyle(navWrapper).display !== 'none'){ const r = navWrapper.getBoundingClientRect(); offset = Math.max(offset, r.bottom) }
+  document.documentElement.style.setProperty('--main-top-offset', `${Math.ceil(offset + 16)}px`)
+}
+window.addEventListener('load', updateMainTopOffset)
+window.addEventListener('resize', updateMainTopOffset)
+
+/* =============== EVENT WIRING =============== */
+document.getElementById('themeBtn').addEventListener('click', toggleTheme)
+document.getElementById('topbarLogoutBtn').addEventListener('click', doLogout)
+document.getElementById('drawerLogoutBtn').addEventListener('click', doLogout)
+document.getElementById('hamburgerBtn').addEventListener('click', openDrawer)
+document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer)
+document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer)
+document.getElementById('dashRefreshBtn').addEventListener('click', () => {
+  const icon = document.getElementById('dashRefreshIcon')
+  icon.style.transition = 'transform 0.6s ease'; icon.style.transform = 'rotate(360deg)'
+  setTimeout(() => { icon.style.transition = 'none'; icon.style.transform = 'rotate(0deg)' }, 650)
+  initDashboard()
+})
+document.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.jump)))
+
+init()
+</script>
+</body>
+</html>
