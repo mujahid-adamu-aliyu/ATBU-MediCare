@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FUD Health Centre — Patient Dashboard</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('fud-patient-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
+<style>
+:root{
+  --primary:#0D6B4E; --primary-mid:#0F9B6E; --primary-light:#10B981;
+  --bg:#F0FDF4; --panel-bg:#FFFFFF; --neu-bg:#FFFFFF;
+  --neu-shadow-d:#c6e6d6; --neu-shadow-l:#ffffff;
+  --text:#0F172A; --text-muted:#64748B;
+  --input-bg:#FFFFFF; --input-border:#CBD5E1; --input-bg-err:#FEF2F2;
+  --card-border:rgba(255,255,255,0.80); --card-border-solid:#CBD5E1;
+  --success:#10B981; --error:#EF4444; --info:#2563EB; --white:#FFFFFF;
+  --shadow-rgb:13,107,78;
+  --radius-card:20px; --radius-input:12px; --radius-btn:999px;
+  --overlay-grad:linear-gradient(150deg,#10B981 0%,#0D6B4E 100%);
+  --brand-grad:linear-gradient(135deg,#10B981 0%,#0D6B4E 100%);
+  --content-max:1200px;
+}
+[data-theme="dark"]{
+  --primary:#2ECC8F; --primary-mid:#1AB87A; --primary-light:#4DD9A3;
+  --bg:#0D1F18; --panel-bg:#172A1E; --neu-bg:#0F1C15;
+  --neu-shadow-d:#060e09; --neu-shadow-l:#1a2e20;
+  --text:#E6F4EC; --text-muted:#7AAF90;
+  --input-bg:#0D1F18; --input-border:#2D4A3A; --input-bg-err:#2A1018;
+  --card-border:rgba(255,255,255,0.18); --card-border-solid:#2D4A3A;
+  --success:#2ECC8F; --error:#F87171; --info:#60A5FA; --white:#E6F4EC;
+  --shadow-rgb:46,204,143;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+*{user-select:none;-webkit-user-select:none}
+
+/* Drawer nav title */
+.drawer-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;}
+html,body{background:var(--bg);color:var(--text);font-family:'Poppins',sans-serif;min-height:100vh;transition:background 250ms ease,color 250ms ease}
+body{overflow-x:hidden}
+.blob{position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none}
+.blob1{width:500px;height:500px;background:rgba(16,185,129,0.12);top:-150px;left:-150px;animation:blobDrift1 22s ease-in-out infinite alternate}
+.blob2{width:420px;height:420px;background:rgba(var(--shadow-rgb),0.10);bottom:-120px;right:-120px;filter:blur(80px);animation:blobDrift2 18s ease-in-out infinite alternate}
+@keyframes blobDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(120px,80px) scale(1.15)}}
+@keyframes blobDrift2{0%{transform:translate(0,0) scale(1.1)}100%{transform:translate(-100px,-60px) scale(1)}}
+
+/* Auth screen */
+#authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-size:20px;color:var(--text-muted);font-family:'Poppins',sans-serif;gap:14px;position:relative;z-index:1}
+#authScreen .spin{font-size:36px;color:var(--primary);animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.layout{position:relative;z-index:1}
+
+/* TOPBAR */
+.topbar-shell{position:fixed;top:0;left:0;right:0;z-index:90;max-width:var(--content-max);margin:12px auto 0;padding-inline:clamp(16px,3vw,32px);pointer-events:none}
+.topbar{
+  position:relative;top:0;z-index:90;
+  width:100%;
+  padding:10px clamp(20px,4vw,36px);
+  background:color-mix(in srgb, var(--panel-bg) 78%, transparent);
+  backdrop-filter:blur(14px) saturate(160%);
+  -webkit-backdrop-filter:blur(14px) saturate(160%);
+  border:1.5px solid var(--card-border-solid);
+  border-radius:var(--radius-card);
+  box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.12);
+  display:flex;align-items:center;gap:14px;
+  pointer-events:auto;
+}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:42px;height:42px;border-radius:10px;background:var(--brand-grad);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.35);overflow:hidden;border:2.5px solid #0D6B4E}
+.brand-logo-img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
+.brand-name{font-weight:800;font-size:13px;color:var(--text);line-height:1.1}
+.brand-sub{font-size:10px;color:var(--text-muted);font-weight:500;margin-top:2px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer;font-size:18px;transition:all 180ms ease}
+.icon-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.18)}
+.logout-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);font:600 13px 'Poppins';cursor:pointer;transition:all 180ms ease}
+.logout-btn:hover{background:rgba(239,68,68,0.18)}
+.desktop-logout-btn{display:inline-flex;}
+@media(max-width:768px){.desktop-logout-btn{display:none;}}
+.hamburger{display:none}
+
+/* NAV STRIP */
+.topnav-strip-wrapper{position:fixed;top:78px;z-index:89;left:0;right:0;max-width:var(--content-max);margin:14px auto 0;padding-inline:clamp(64px,10vw,120px);pointer-events:none}
+.topnav-strip-outer{padding:14px 16px;background:color-mix(in srgb, var(--panel-bg) 78%, transparent);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1.5px solid var(--card-border-solid);border-radius:24px;box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.08);pointer-events:auto}
+.topnav-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.nav-item{display:flex;align-items:center;justify-content:center;gap:9px;padding:0 20px;min-height:44px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:999px;color:var(--text-muted);font:700 14px 'Poppins',sans-serif;opacity:.6;cursor:pointer;transition:all 200ms ease}
+.nav-item i{font-size:18px}
+.nav-item:hover{opacity:.9;transform:translateY(-1px)}
+.nav-item.active{color:#fff;border-color:transparent;background:var(--brand-grad);box-shadow:0 6px 20px rgba(var(--shadow-rgb),0.40);opacity:1}
+.nav-item[data-tab="dashboard"]{grid-column:1 / -1}
+.nav-item[data-tab="profile"]{grid-column:1 / -1}
+
+/* MAIN */
+.main{max-width:var(--content-max);margin:0 auto 60px;padding:clamp(24px,5vw,60px) clamp(64px,10vw,120px);padding-top:var(--main-top-offset,200px);position:relative;z-index:1}
+.page{display:none}
+.page.active{display:block;animation:fadeUp 360ms ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.page-title{font-size:26px;font-weight:800;color:var(--text);margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.page-title::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--brand-grad)}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:36px}
+.stat-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:22px 24px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 6px rgba(0,0,0,0.04),0 10px 24px rgba(var(--shadow-rgb),0.08),inset 0 1px 0 rgba(255,255,255,0.60);position:relative;overflow:hidden;transition:transform 200ms ease,box-shadow 200ms ease}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brand-grad);opacity:.35;transition:opacity 200ms ease}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 6px 10px rgba(0,0,0,0.06),0 14px 32px rgba(var(--shadow-rgb),0.14)}
+.stat-card:hover::before{opacity:1}
+.stat-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);font-size:22px;flex-shrink:0}
+.stat-icon.amber{background:linear-gradient(135deg,rgba(245,158,11,0.18),rgba(245,158,11,0.08));border-color:rgba(245,158,11,0.25);color:#F59E0B}
+.stat-meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;color:var(--text-muted)}
+.stat-value{font-size:30px;font-weight:800;color:var(--text);line-height:1}
+
+/* FOLLOW-UP CARD */
+.followup-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:18px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 4px 6px rgba(0,0,0,0.04),0 10px 24px rgba(var(--shadow-rgb),0.08);position:relative;overflow:hidden}
+.followup-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--brand-grad)}
+.followup-icon{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);font-size:20px}
+.followup-body{flex:1;min-width:180px}
+.followup-title{font-weight:700;font-size:14px;color:var(--text)}
+.followup-sub{font-size:12.5px;color:var(--text-muted);margin-top:2px}
+
+/* SECTION HEADER */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:15px;font-weight:700;color:var(--text)}
+
+/* BUTTONS */
+.btn-primary{background:var(--brand-grad);color:#fff;border:none;border-radius:999px;padding:10px 20px;font:600 13px 'Poppins';box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.35);cursor:pointer;transition:all 180ms ease;display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.45)}
+.btn-secondary{background:var(--panel-bg);color:var(--text);border:1.5px solid var(--card-border-solid);border-radius:999px;padding:10px 20px;font:600 13px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 180ms ease}
+.btn-secondary:hover{background:color-mix(in srgb, var(--primary) 6%, var(--panel-bg))}
+.btn-danger{background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);border-radius:999px;padding:8px 16px;font:600 12px 'Poppins';cursor:pointer;transition:all 180ms ease}
+.btn-danger:hover{background:rgba(239,68,68,0.20)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* TABLES */
+.table-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);overflow:hidden;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:rgba(var(--shadow-rgb),0.06);padding:12px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);font-weight:700;border-bottom:1.5px solid var(--card-border-solid);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--card-border-solid);color:var(--text);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+tr:last-child td{border-bottom:none}
+
+/* ZEBRA STRIPING */
+tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.6)}
+tbody tr:nth-child(even) td{background:rgba(16,185,129,0.04)}
+[data-theme="dark"] tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.02)}
+[data-theme="dark"] tbody tr:nth-child(even) td{background:rgba(46,204,143,0.05)}
+tbody tr:hover td{background:rgba(var(--shadow-rgb),0.08) !important}
+
+/* CELL TYPOGRAPHY */
+td.cell-name{font-weight:700;color:var(--text);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+td.cell-email{font-size:12px;color:var(--text-muted);font-weight:500}
+td.cell-id{font-family:monospace;font-weight:600;color:var(--primary);font-size:12.5px}
+td.cell-date{font-style:italic;font-size:12px;color:var(--text-muted);font-weight:500}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge.pending{color:#F59E0B;background:rgba(245,158,11,0.12)}
+.badge.approved{color:#0F9B6E;background:rgba(16,185,129,0.12)}
+.badge.cancelled{color:#EF4444;background:rgba(239,68,68,0.12)}
+.badge.verified{color:#2563EB;background:rgba(37,99,235,0.12)}
+.badge.issued{color:#0F9B6E;background:rgba(16,185,129,0.12)}
+.badge.dispensed{color:#2563EB;background:rgba(37,99,235,0.12)}
+
+/* FORMS */
+.form-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;margin-bottom:24px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.form-wrap-collapsible{overflow:hidden;max-height:0;opacity:0;transform:translateY(-8px);transition:max-height 380ms cubic-bezier(0.34,1.1,0.64,1),opacity 280ms ease,transform 300ms cubic-bezier(0.34,1.1,0.64,1),margin 280ms ease;margin-bottom:0}
+.form-wrap-collapsible.open{max-height:700px;opacity:1;transform:translateY(0);margin-bottom:24px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.form-field{display:flex;flex-direction:column;min-width:0}
+.form-field.full{grid-column:1 / -1}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins';transition:border-color 180ms ease,box-shadow 180ms ease;font-family:'Poppins',sans-serif}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15);outline:none}
+.form-textarea{min-height:90px;resize:vertical}
+.form-actions{margin-top:20px;display:flex;gap:10px;justify-content:flex-end}
+.disclaimer{font-size:12px;color:var(--text-muted);font-style:italic;margin-top:12px}
+
+/* STATE BOX */
+.state-box{text-align:center;padding:48px 24px;color:var(--text-muted);font-size:14px}
+.state-box i{font-size:36px;display:block;margin-bottom:10px;color:var(--text-muted);opacity:.7}
+
+/* PAGINATION */
+.pagination-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-wrap:wrap;gap:10px}
+.pagination-info{font-size:12px;color:var(--text-muted)}
+.pagination{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.page-pill{min-width:34px;height:34px;padding:0 10px;border-radius:999px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font:600 12px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 180ms ease}
+.page-pill:hover:not(:disabled){color:var(--text);transform:translateY(-1px)}
+.page-pill.active{background:var(--brand-grad);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.30)}
+.page-pill:disabled{opacity:.4;cursor:not-allowed}
+
+/* TOASTS */
+#toastContainer{
+  position:fixed;top:0;left:50%;transform:translateX(-50%);
+  max-width:var(--content-max);width:calc(100% - 48px);
+  display:flex;flex-direction:column;gap:10px;
+  padding-top:16px;z-index:9999;pointer-events:none;
+}
+.toast{
+  pointer-events:auto;display:flex;align-items:center;gap:10px;
+  padding:10px 38px 10px 12px;background:var(--panel-bg);border-radius:14px;
+  border-left:4px solid var(--text-muted);
+  box-shadow:0 16px 40px rgba(15,23,42,0.18),0 2px 8px rgba(15,23,42,0.08);
+  position:relative;overflow:hidden;
+  opacity:0;transform:translateY(-120%);
+  animation:toastDropIn 650ms cubic-bezier(0.34,1.56,0.64,1) forwards;
+  touch-action:none;
+  will-change:transform,opacity;
+  cursor:grab;
+}
+.toast.is-dragging{
+  cursor:grabbing;
+  animation:none;
+  opacity:1;
+  transform:translateY(0);
+  transition:none;
+}
+/* Drag hint bar — mobile only */
+.toast-drag-hint{
+  display:none;
+  position:absolute;top:5px;left:50%;transform:translateX(-50%);
+  width:32px;height:3px;border-radius:99px;
+  background:var(--text-muted);opacity:.35;
+}
+@keyframes toastDropIn{
+  0%{opacity:0;transform:translateY(-120%);}
+  60%{opacity:1;transform:translateY(8%);}
+  80%{transform:translateY(-4%);}
+  100%{opacity:1;transform:translateY(0);}
+}
+@media(max-width:640px){
+  #toastContainer{width:calc(100% - 24px);}
+  .toast{padding-top:16px;padding-right:12px;}
+  .toast-close{display:none !important;}
+  .toast-drag-hint{display:block;}
+}
+.toast.t-success{border-left-color:var(--success)}
+.toast.t-error{border-left-color:var(--error)}
+.toast.t-info{border-left-color:var(--info)}
+.toast-icon{flex-shrink:0;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font-size:1rem}
+.toast.t-success .toast-icon{background:rgba(16,185,129,0.14);color:var(--success)}
+.toast.t-error .toast-icon{background:rgba(239,68,68,0.14);color:var(--error)}
+.toast.t-info .toast-icon{background:rgba(37,99,235,0.14);color:var(--info)}
+.toast-body{min-width:0}
+.toast-title{font-size:13px;font-weight:700;color:var(--text)}
+.toast-msg{font-size:12px;color:var(--text-muted);line-height:1.4}
+.toast-close{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;color:var(--text-muted);display:grid;place-items:center}
+.toast-close i{font-size:14px}
+
+/* CONFIRM MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 200ms ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;max-width:420px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1)}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px}
+.modal-msg{font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* RECEIPT MODAL */
+.receipt-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:32px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1)}
+.receipt-head{text-align:center;margin-bottom:20px;padding-bottom:18px;border-bottom:2px dashed var(--card-border-solid)}
+.receipt-head h2{font-size:20px;font-weight:800;color:var(--primary);margin-bottom:4px}
+.receipt-head p{font-size:12px;color:var(--text-muted)}
+.receipt-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px dashed var(--card-border-solid)}
+.receipt-row strong{color:var(--text);font-weight:600}
+.receipt-row span{color:var(--text-muted)}
+.receipt-amount{font-size:22px;font-weight:800;color:var(--primary);text-align:center;margin:18px 0;padding:14px;background:rgba(16,185,129,0.08);border-radius:14px}
+
+/* MOBILE DRAWER */
+.drawer-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:95;opacity:0;visibility:hidden;transition:opacity 280ms ease,visibility 280ms ease}
+.drawer-backdrop.open{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(86vw,320px);background:var(--panel-bg);border-left:1px solid var(--card-border);border-top-left-radius:24px;border-bottom-left-radius:24px;box-shadow:-20px 0 50px rgba(0,0,0,0.25);transform:translateX(110%);transition:transform 380ms cubic-bezier(0.34,1.2,0.64,1);z-index:96;display:flex;flex-direction:column;padding:24px}
+.drawer.open{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.drawer-nav{display:flex;flex-direction:column;gap:8px;padding:14px 4px;overflow-y:auto;flex:1}
+.drawer-nav .nav-item{justify-content:flex-start;width:100%;border-radius:999px;padding:12px 16px;min-height:0;font-size:14px;font-weight:500;background:var(--bg);border:none;color:var(--text);box-shadow:none;opacity:1 !important;transform:none !important;grid-column:auto !important}
+.drawer-nav .nav-item:hover{background:var(--brand-grad);color:#fff;box-shadow:none}
+.drawer-nav .nav-item.active{background:var(--brand-grad);color:#fff;box-shadow:none}
+.drawer-foot{padding-top:14px;border-top:1px solid var(--card-border-solid);display:flex;gap:8px;align-items:center}
+
+@media (max-width: 768px){
+  .topnav-strip-wrapper{display:none}
+  .hamburger{display:flex}
+  .stat-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .form-grid{grid-template-columns:1fr}
+  .topbar-shell{margin:8px 10px 0;padding-inline:0;max-width:none}
+  .main{padding:clamp(16px,4vw,32px);padding-top:var(--main-top-offset,90px)}
+  .page-title{font-size:20px}
+  .brand-name{font-size:12px}
+}
+@media (max-width: 480px){
+  .stat-grid{grid-template-columns:1fr}
+  .top-right .logout-btn span{display:none}
+}
+
+/* CUSTOM SELECT */
+.custom-select-wrap{position:relative;width:100%;font-family:'Poppins',sans-serif;z-index:1}
+.custom-select-wrap.open{z-index:100}
+.custom-select-trigger{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:border-color 180ms ease,box-shadow 180ms ease;text-align:left}
+.custom-select-trigger:hover{border-color:var(--primary)}
+.custom-select-wrap.open .custom-select-trigger{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15)}
+.custom-select-trigger .cs-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-select-trigger .cs-label.placeholder{color:var(--text-muted)}
+.custom-select-trigger .cs-caret{transition:transform 200ms ease;color:var(--text-muted);font-size:16px;flex-shrink:0}
+.custom-select-wrap.open .cs-caret{transform:rotate(180deg)}
+.custom-select-options{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.18);padding:6px;z-index:200;max-height:0;overflow:hidden;opacity:0;transform:translateY(-6px) scaleY(0.96);transform-origin:top center;transition:max-height 240ms cubic-bezier(0.34,1.2,0.64,1),opacity 200ms ease,transform 220ms cubic-bezier(0.34,1.2,0.64,1),padding 200ms ease;pointer-events:none}
+.custom-select-wrap.open .custom-select-options{max-height:260px;overflow-y:auto;opacity:1;transform:translateY(0) scaleY(1);pointer-events:auto}
+.cs-option{padding:10px 12px;border-radius:8px;font:500 13px 'Poppins',sans-serif;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background 140ms ease,color 140ms ease}
+.cs-option:hover{background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg))}
+.cs-option.active{color:var(--primary);font-weight:700;background:color-mix(in srgb, var(--primary) 10%, var(--panel-bg))}
+.cs-option.disabled{color:var(--text-muted);cursor:not-allowed;opacity:.7}
+
+/* SLOT CARDS (booking step 2) */
+.slot-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);padding:12px 16px;font-size:13px;color:var(--text)}
+.slot-card .slot-meta{display:flex;flex-direction:column;gap:2px}
+.slot-card .slot-spots{font-size:12px;color:var(--text-muted)}
+
+/* PROFILE TABS */
+.profile-tabs{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.profile-tab{padding:10px 22px;border-radius:999px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font:700 13px 'Poppins',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all 200ms ease;opacity:.7}
+.profile-tab i{font-size:16px}
+.profile-tab:hover{opacity:1;transform:translateY(-1px)}
+.profile-tab.active{background:var(--brand-grad);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.35);opacity:1}
+.profile-pane{display:none}
+.profile-pane.active{display:block;animation:fadeUp 280ms ease}
+.field-hint{font-size:11px;color:var(--error);margin-top:6px;font-weight:600;display:none}
+.field-hint.show{display:block}
+
+@media (max-width: 768px){
+  .btn-primary,.btn-secondary,.btn-danger,.logout-btn,.profile-tab{font-size:11px;white-space:nowrap;padding-left:12px;padding-right:12px}
+  .btn-primary i,.btn-secondary i,.btn-danger i,.logout-btn i,.profile-tab i{font-size:13px}
+}
+
+</style>
+</head>
+<body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div id="authScreen"><i class="ph ph-spinner spin" aria-hidden="true"></i><span>Verifying session…</span></div>
+
+<div id="app" style="display:none;">
+  <div class="layout">
+
+    <div class="topbar-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon"><img src="data:image/jpeg;base64,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" alt="FUD Logo" class="brand-logo-img" /></div>
+        <div>
+          <div class="brand-name">FUD Health Centre</div>
+        </div>
+      </div>
+      <div class="top-right">
+        <button class="icon-btn" id="themeBtn" title="Toggle theme"><i class="ph ph-moon" id="themeIcon"></i></button>
+        <button class="logout-btn desktop-logout-btn" id="topbarLogoutBtn"><i class="ph ph-sign-out"></i> <span>Sign Out</span></button>
+        <button class="icon-btn hamburger" id="hamburgerBtn" title="Menu"><i class="ph ph-list"></i></button>
+      </div>
+    </header>
+    </div>
+
+    <div class="topnav-strip-wrapper" id="desktopNavWrapper">
+      <div class="topnav-strip-outer">
+        <nav class="topnav-strip" id="topnav"></nav>
+      </div>
+    </div>
+
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <aside class="drawer" id="drawer">
+      <div class="drawer-head">
+        <div class="brand">
+          <div class="brand-icon"><img src="data:image/jpeg;base64,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" alt="FUD Logo" class="brand-logo-img" /></div>
+          <div>
+            <span class="drawer-title">Navigation</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="drawerCloseBtn"><i class="ph ph-x"></i></button>
+      </div>
+      <nav class="drawer-nav" id="drawerNav"></nav>
+      <div class="drawer-foot">
+        <button class="logout-btn" id="drawerLogoutBtn" style="justify-content:center;width:100%;min-height:55px;"><i class="ph ph-sign-out"></i> Log Out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <h1 class="page-title" style="margin-bottom:0">Patient Dashboard</h1>
+          <button class="icon-btn" id="dashRefreshBtn" title="Refresh dashboard" style="width:40px;height:40px;flex-shrink:0"><i class="ph ph-arrow-clockwise" id="dashRefreshIcon"></i></button>
+        </div>
+        <div class="stat-grid" id="statGrid"></div>
+        <div id="followUpSection" style="display:none;margin-bottom:28px">
+          <div class="section-header">
+            <div class="section-title"><i class="ph-fill ph-calendar-plus" style="color:var(--primary);margin-right:6px"></i>Recommended Follow-ups</div>
+          </div>
+          <div id="followUpList" style="display:flex;flex-direction:column;gap:12px"></div>
+        </div>
+        <div class="section-header">
+          <div class="section-title">Recent Appointments</div>
+          <button class="btn-secondary btn-sm" data-jump="appointments">View All <i class="ph ph-arrow-right"></i></button>
+        </div>
+        <div class="table-wrap"><div class="table-scroll" id="recentApptsWrap"><div class="state-box">Loading…</div></div></div>
+      </div>
+
+      <!-- APPOINTMENTS -->
+      <div class="page" id="page-appointments">
+        <h1 class="page-title">My Appointments</h1>
+        <div class="section-header">
+          <div class="section-title">All Appointments</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-primary" id="toggleApptForm"><i class="ph ph-plus"></i> Book Appointment</button>
+          </div>
+        </div>
+        <div class="form-wrap form-wrap-collapsible" id="apptFormWrap">
+          <!-- STEP 1: choose doctor -->
+          <div id="bookStep1">
+            <div class="form-grid">
+              <div class="form-field full">
+                <label class="form-label">Step 1 — Choose a Doctor</label>
+                <div id="apptDoctor" class="custom-select-wrap" data-cs data-cs-placeholder="Select a doctor…"></div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" id="apptCancelBtn">Cancel</button>
+              <button type="button" class="btn-primary" id="loadSlotsBtn"><i class="ph ph-calendar-check"></i> View Available Shifts</button>
+            </div>
+          </div>
+
+          <!-- STEP 2: choose slot -->
+          <div id="bookStep2" style="display:none;margin-top:18px">
+            <label class="form-label">Step 2 — Choose a Shift</label>
+            <div id="slotsList" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+          </div>
+
+          <!-- STEP 3: reason + confirm -->
+          <div id="bookStep3" style="display:none;margin-top:18px">
+            <div class="form-grid">
+              <div class="form-field full">
+                <label class="form-label">Step 3 — Reason for Visit</label>
+                <textarea class="form-textarea" id="reasonInput" placeholder="Describe your reason for visit"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" id="apptCancelBtn2">Cancel</button>
+              <button type="button" class="btn-primary" id="confirmBookingBtn"><i class="ph ph-check"></i> Confirm Booking</button>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-scroll" id="apptTableWrap"><div class="state-box">Loading…</div></div>
+          <div class="pagination-wrap"><div class="pagination-info" id="apptPagInfo"></div><div class="pagination" id="apptPag"></div></div>
+        </div>
+      </div>
+
+      <!-- PRESCRIPTIONS -->
+      <div class="page" id="page-prescriptions">
+        <h1 class="page-title">My Prescriptions</h1>
+        <div class="section-header"><div class="section-title">All Prescriptions</div></div>
+        <div class="table-wrap">
+          <div class="table-scroll" id="rxTableWrap"><div class="state-box">Loading…</div></div>
+          <div class="pagination-wrap"><div class="pagination-info" id="rxPagInfo"></div><div class="pagination" id="rxPag"></div></div>
+        </div>
+      </div>
+
+      <!-- PAYMENTS -->
+      <div class="page" id="page-payments">
+        <h1 class="page-title">Payments</h1>
+        <div class="section-header">
+          <div class="section-title">All Payments</div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-scroll" id="payTableWrap"><div class="state-box">Loading…</div></div>
+          <div class="pagination-wrap"><div class="pagination-info" id="payPagInfo"></div><div class="pagination" id="payPag"></div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const SUPABASE_URL = 'https://qseuseqkzvnlqsartkoq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXVzZXFrenZubHFzYXJ0a29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjcwMTcsImV4cCI6MjA5OTIwMzAxN30.49UXm0BhbHy6oEAYRTJjddiRB3VsrVg-jkgmAa2fEH4'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+/* ================= NAV ITEMS ================= */
+const NAV_ITEMS = [
+  { tab:'dashboard',     label:'Dashboard',     icon:'ph-squares-four' },
+  { tab:'appointments',  label:'Appointments',  icon:'ph-calendar-check' },
+  { tab:'prescriptions', label:'Prescriptions', icon:'ph-prescription' },
+  { tab:'payments',      label:'Payments',      icon:'ph-currency-ngn' },
+];
+
+function renderNav(){
+  const top = document.getElementById('topnav');
+  const drw = document.getElementById('drawerNav');
+  const html = NAV_ITEMS.map((n,i) => {
+    const active = i === 0 ? 'active' : '';
+    return `<button class="nav-item ${active}" data-tab="${n.tab}"><i class="ph ${n.icon}"></i> ${n.label}</button>`;
+  }).join('');
+  top.innerHTML = html;
+  drw.innerHTML = html;
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', () => switchTab(el.dataset.tab));
+  });
+}
+
+/* ================= HELPERS ================= */
+function escHtml(s){
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function emptyIcon(){ return '<i class="ph ph-minus-circle" style="color:var(--text-muted);opacity:.5;font-size:16px" title="None"></i>'; }
+function formatDate(d){ if(!d) return emptyIcon(); const dt=new Date(d); if(isNaN(dt)) return escHtml(d); return dt.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}); }
+function formatDateTime(d){ if(!d) return emptyIcon(); const dt=new Date(d); if(isNaN(dt)) return escHtml(d); return dt.toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function formatTime(t){
+  if(!t) return emptyIcon();
+  const parts = String(t).split(':');
+  if (parts.length < 2) return escHtml(t);
+  let h = parseInt(parts[0],10); const m = parts[1].padStart(2,'0');
+  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return `${String(h).padStart(2,'0')}:${m} ${ap}`;
+}
+function formatCurrency(n){ const v = Number(n||0); return '₦' + v.toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function formatMethod(m){ if(!m) return emptyIcon(); return ({card:'Card',transfer:'Bank Transfer',cash_at_counter:'Cash at Counter'}[m]) || escHtml(m); }
+function badge(status){ if(!status) return emptyIcon(); const s = String(status).toLowerCase(); return `<span class="badge ${escHtml(s)}">${escHtml(s)}</span>`; }
+
+function buildTable(columns, rows, opts={}){
+  if (!rows || rows.length === 0){
+    return `<div class="state-box"><i class="ph ph-tray"></i>${opts.emptyText||'No records found.'}</div>`;
+  }
+  const thead = '<thead><tr>' + columns.map(c => `<th>${escHtml(c.label)}</th>`).join('') + '</tr></thead>';
+  const tbody = '<tbody>' + rows.map(r => '<tr>' + columns.map(c => {
+    let v;
+    if (c.render) v = c.render(r);
+    else if (c.badge) v = badge(r[c.key]);
+    else v = escHtml(r[c.key]);
+    return `<td${c.cellClass?' class="'+c.cellClass+'"':''}>${v}</td>`;
+  }).join('') + '</tr>').join('') + '</tbody>';
+  return `<table>${thead}${tbody}</table>`;
+}
+
+function buildPagination(pagEl, infoEl, currentPage, pageSize, totalCount, loadFn){
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const from = totalCount === 0 ? 0 : (currentPage-1)*pageSize + 1;
+  const to = Math.min(currentPage*pageSize, totalCount);
+  infoEl.textContent = totalCount === 0 ? 'No results' : `Showing ${from}–${to} of ${totalCount} results`;
+
+  let html = `<button class="page-pill" ${currentPage===1?'disabled':''} data-p="${currentPage-1}"><i class="ph ph-caret-left"></i></button>`;
+  const pages = [];
+  const maxShow = 5;
+  let start = Math.max(1, currentPage - 2);
+  let end = Math.min(totalPages, start + maxShow - 1);
+  start = Math.max(1, end - maxShow + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  pages.forEach(p => {
+    html += `<button class="page-pill ${p===currentPage?'active':''}" data-p="${p}">${p}</button>`;
+  });
+  html += `<button class="page-pill" ${currentPage===totalPages?'disabled':''} data-p="${currentPage+1}"><i class="ph ph-caret-right"></i></button>`;
+  pagEl.innerHTML = html;
+  pagEl.querySelectorAll('.page-pill[data-p]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = parseInt(btn.dataset.p,10);
+      if (!isNaN(p) && p >= 1 && p <= totalPages) loadFn(p);
+    });
+  });
+}
+
+/* ================= TOAST ================= */
+function showToast(type, title, message){
+  const wrap = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast t-${type}`;
+  const icons = { success:'ph-fill ph-check-circle', error:'ph-fill ph-x-circle', info:'ph-fill ph-info' };
+  const icon = icons[type] || icons.info;
+  t.innerHTML =
+    `<div class="toast-drag-hint"></div>` +
+    `<div class="toast-icon"><i class="${icon}" aria-hidden="true"></i></div>` +
+    `<div class="toast-body"><div class="toast-title">${escHtml(title)}</div><div class="toast-msg">${escHtml(message)}</div></div>` +
+    `<button class="toast-close" type="button" aria-label="Dismiss"><i class="ph ph-x" aria-hidden="true"></i></button>`;
+
+  let autoTimer = null;
+  const remove = () => { clearTimeout(autoTimer); t.remove(); };
+  t.querySelector('.toast-close').addEventListener('click', remove);
+  wrap.appendChild(t);
+  autoTimer = setTimeout(remove, 4000);
+
+  /* ---------- Drag to dismiss (mouse + touch) ---------- */
+  const DISMISS_THRESHOLD = 80; // px in any direction
+  let startX = 0, startY = 0;
+  let curX = 0, curY = 0;
+  let dragging = false;
+
+  function onDragStart(x, y){
+    startX = x; startY = y; curX = 0; curY = 0;
+    dragging = true;
+    clearTimeout(autoTimer);
+    t.classList.add('is-dragging');
+    t.style.transition = 'none';
+  }
+
+  function onDragMove(x, y){
+    if (!dragging) return;
+    curX = x - startX;
+    curY = y - startY;
+    const dist = Math.hypot(curX, curY);
+    const opacity = Math.max(0, 1 - dist / (DISMISS_THRESHOLD * 1.5));
+    t.style.transform = `translate(${curX}px, ${curY}px)`;
+    t.style.opacity = opacity;
+  }
+
+  function onDragEnd(){
+    if (!dragging) return;
+    dragging = false;
+    const dist = Math.hypot(curX, curY);
+    if (dist >= DISMISS_THRESHOLD){
+      /* Fling out in the drag direction */
+      const scale = 2.5;
+      t.style.transition = 'transform 250ms ease, opacity 200ms ease';
+      t.style.transform = `translate(${curX * scale}px, ${curY * scale}px)`;
+      t.style.opacity = '0';
+      setTimeout(remove, 260);
+    } else {
+      /* Snap back */
+      t.style.transition = 'transform 320ms cubic-bezier(0.34,1.56,0.64,1), opacity 200ms ease';
+      t.style.transform = 'translate(0,0)';
+      t.style.opacity = '1';
+      t.classList.remove('is-dragging');
+      autoTimer = setTimeout(remove, 3000);
+    }
+  }
+
+  /* Mouse events */
+  t.addEventListener('mousedown', e => {
+    if (e.target.closest('.toast-close')) return;
+    onDragStart(e.clientX, e.clientY);
+    const onMove = ev => onDragMove(ev.clientX, ev.clientY);
+    const onUp   = ()  => { onDragEnd(); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
+
+  /* Touch events */
+  t.addEventListener('touchstart', e => {
+    if (e.target.closest('.toast-close')) return;
+    const touch = e.touches[0];
+    onDragStart(touch.clientX, touch.clientY);
+  }, { passive: true });
+  t.addEventListener('touchmove', e => {
+    const touch = e.touches[0];
+    onDragMove(touch.clientX, touch.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  t.addEventListener('touchend', () => onDragEnd());
+  t.addEventListener('touchcancel', () => onDragEnd());
+}
+
+/* ================= CONFIRM ================= */
+function showConfirm(title, message){
+  return new Promise(resolve => {
+    const bd = document.createElement('div');
+    bd.className = 'modal-backdrop';
+    bd.innerHTML = `<div class="modal-card" role="dialog"><div class="modal-title">${escHtml(title)}</div><div class="modal-msg">${escHtml(message)}</div><div class="modal-actions"><button class="btn-secondary" data-act="cancel">Cancel</button><button class="btn-danger" data-act="ok" style="padding:10px 20px;font-size:13px">Confirm</button></div></div>`;
+    document.body.appendChild(bd);
+    const close = (v) => { bd.remove(); resolve(v); };
+    bd.addEventListener('click', e => { if (e.target === bd) close(false); });
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false));
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => close(true));
+  });
+}
+
+/* ================= THEME ================= */
+function applyThemeIcon(){
+  const t = document.documentElement.getAttribute('data-theme');
+  const ic = document.getElementById('themeIcon');
+  if (ic) ic.className = t === 'dark' ? 'ph ph-sun' : 'ph ph-moon';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  const nxt = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', nxt);
+  try { localStorage.setItem('fud-patient-theme', nxt); } catch(e){}
+  applyThemeIcon();
+}
+
+/* ================= DRAWER ================= */
+function openDrawer(){
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ================= AUTH (real Supabase) ================= */
+let currentUser = null;
+let selectedSlot = null;
+
+async function checkAuth(){
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session){
+    window.location.href = 'index.html';
+    return;
+  }
+
+  currentUser = session.user;
+
+  const { data: roleRow, error: roleErr } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (roleErr || !roleRow || roleRow.role !== 'patient'){
+    window.location.href = 'index.html';
+    return;
+  }
+
+  const { data: patient } = await supabase
+    .from('patients')
+    .select('full_name, is_active')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (patient && patient.is_active === false){
+    document.body.innerHTML = '<h1>Account Deactivated</h1><p>Your account has been deactivated. Please contact the hospital admin for assistance.</p>';
+    await supabase.auth.signOut();
+    return;
+  }
+
+  window.currentProfile = { name: patient ? patient.full_name : '' };
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initDashboard();
+}
+
+async function doLogout(){
+  const ok = await showConfirm('Sign Out', 'Are you sure you want to sign out of your account?');
+  if (!ok) return;
+  await supabase.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+/* ================= TAB SWITCH ================= */
+function switchTab(tabName){
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tabName));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('page-'+tabName);
+  if (target) target.classList.add('active');
+  closeDrawer();
+  switch(tabName){
+    case 'dashboard': initDashboard(); break;
+    case 'appointments': initAppointments(); break;
+    case 'prescriptions': initPrescriptions(); break;
+    case 'payments': initPayments(); break;
+  }
+}
+
+/* ================= DASHBOARD (real data) ================= */
+async function initDashboard(){
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, appointment_code, assigned_time, status, reason')
+    .eq('patient_id', currentUser.id)
+    .in('status', ['pending', 'approved'])
+    .order('assigned_time', { ascending: true })
+    .limit(1);
+
+  const wrap = document.getElementById('recentApptsWrap');
+  document.getElementById('followUpSection').style.display = 'none';
+
+  if (error || !data || data.length === 0){
+    document.getElementById('statGrid').innerHTML = '';
+    wrap.innerHTML = buildTable([], [], { emptyText:'No upcoming appointments.' });
+    return;
+  }
+
+  const appt = data[0];
+  const code = appt.appointment_code || appt.id;
+  wrap.innerHTML = buildTable([
+    { label:'Reference', render:r => escHtml(r.appointment_code || r.id) },
+    { label:'Time', render:r => formatDateTime(r.assigned_time) },
+    { label:'Status', render:r => badge(r.status) },
+    { label:'Reason', render:r => escHtml(r.reason) },
+  ], data, { emptyText:'No upcoming appointments.' });
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon"><i class="ph-fill ph-calendar-check"></i></div>
+      <div class="stat-meta"><div class="stat-label">Upcoming</div><div class="stat-value">${escHtml(code)}</div></div>
+    </div>`;
+}
+
+/* ================= APPOINTMENTS (real data) ================= */
+let apptPage = 1; const PAGE_SIZE = 20;
+
+async function loadDoctors(){
+  const { data, error } = await supabase
+    .from('doctors')
+    .select('id, full_name, licence_number')
+    .eq('is_active', true);
+
+  if (error || !data){
+    populateCustomSelect('apptDoctor', []);
+    return;
+  }
+  populateCustomSelect('apptDoctor', data.map(doc => ({
+    value: doc.id,
+    label: doc.full_name + ' (' + doc.licence_number + ')'
+  })));
+}
+
+function initAppointments(){
+  apptPage = 1;
+  selectedSlot = null;
+  document.getElementById('bookStep2').style.display = 'none';
+  document.getElementById('bookStep3').style.display = 'none';
+  loadDoctors();
+  loadAppointments(1);
+}
+
+document.getElementById('loadSlotsBtn').addEventListener('click', async () => {
+  const doctorId = getCustomSelectValue('apptDoctor');
+  const slotsList = document.getElementById('slotsList');
+  if (!doctorId){
+    showToast('error', 'Missing field', 'Please select a doctor first.');
+    return;
+  }
+  slotsList.innerHTML = '<div class="state-box">Loading…</div>';
+  document.getElementById('bookStep2').style.display = 'block';
+
+  const { data, error } = await supabase
+    .from('doctor_slots')
+    .select('id, date, shift, capacity, booked_count')
+    .eq('doctor_id', doctorId)
+    .gte('date', new Date().toISOString().split('T')[0])
+    .order('date', { ascending: true });
+
+  if (error || !data || data.length === 0){
+    slotsList.innerHTML = '<div class="state-box">No available shifts for this doctor.</div>';
+    return;
+  }
+
+  slotsList.innerHTML = data.map(slot => {
+    const spotsLeft = slot.capacity - slot.booked_count;
+    return `<div class="slot-card">
+      <div class="slot-meta">
+        <strong>${formatDate(slot.date)}</strong>
+        <span class="slot-spots">${escHtml(slot.shift.toUpperCase())} shift · Spots left: ${spotsLeft}</span>
+      </div>
+      <button class="btn-primary btn-sm" data-slot="${slot.id}" data-date="${escHtml(slot.date)}" data-shift="${escHtml(slot.shift)}" ${spotsLeft <= 0 ? 'disabled' : ''}>${spotsLeft > 0 ? 'Select' : 'Full'}</button>
+    </div>`;
+  }).join('');
+
+  slotsList.querySelectorAll('[data-slot]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedSlot = btn.dataset.slot;
+      document.getElementById('bookStep3').style.display = 'block';
+      showToast('info', 'Slot selected', `${btn.dataset.date} · ${btn.dataset.shift.toUpperCase()} shift`);
+    });
+  });
+});
+
+document.getElementById('confirmBookingBtn').addEventListener('click', async () => {
+  const reason = document.getElementById('reasonInput').value.trim();
+
+  if (!selectedSlot){
+    showToast('error', 'Missing slot', 'Please select a shift first.');
+    return;
+  }
+  if (!reason){
+    showToast('error', 'Missing reason', 'Please enter a reason for visit.');
+    return;
+  }
+
+  const { data, error } = await supabase.rpc('book_appointment', {
+    p_slot_id: selectedSlot,
+    p_patient_id: currentUser.id,
+    p_reason: reason
+  });
+
+  if (error){
+    showToast('error', 'Booking failed', error.message);
+    return;
+  }
+
+  showToast('success', 'Booking confirmed', 'Your appointment has been booked.');
+  document.getElementById('reasonInput').value = '';
+  selectedSlot = null;
+  document.getElementById('bookStep2').style.display = 'none';
+  document.getElementById('bookStep3').style.display = 'none';
+  document.getElementById('apptFormWrap').classList.remove('open');
+  loadAppointments(1);
+  initDashboard();
+});
+
+async function loadAppointments(page){
+  apptPage = page;
+  const wrap = document.getElementById('apptTableWrap');
+  wrap.innerHTML = '<div class="state-box">Loading…</div>';
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, appointment_code, assigned_time, reason, status, cancellation_note, advice_to_patient')
+    .eq('patient_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error || !data){
+    wrap.innerHTML = buildTable([], [], { emptyText:'Error loading appointments.' });
+    return;
+  }
+
+  wrap.innerHTML = buildTable([
+    { label:'Reference', render:r => escHtml(r.appointment_code || r.id) },
+    { label:'Time', render:r => formatDateTime(r.assigned_time) },
+    { label:'Reason', render:r => escHtml(r.reason) },
+    { label:'Status', render:r => badge(r.status) },
+    { label:"Doctor's Note", render:r => r.cancellation_note ? escHtml(r.cancellation_note) : emptyIcon() },
+    { label:'Advice', render:r => r.advice_to_patient ? escHtml(r.advice_to_patient) : emptyIcon() },
+    { label:'Actions', render:r => (r.status === 'pending' || r.status === 'approved')
+        ? `<button class="btn-danger" data-cancel="${escHtml(r.id)}">Cancel</button>`
+        : `<span title="No actions available" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;border:1.5px solid var(--card-border-solid);color:var(--text-muted);opacity:.45;font-size:16px;"><i class="ph ph-lock-simple"></i></span>` },
+  ], data, { emptyText:'No appointments yet.' });
+
+  wrap.querySelectorAll('[data-cancel]').forEach(b => {
+    b.addEventListener('click', async () => {
+      const ok = await showConfirm('Cancel Appointment','Are you sure you want to cancel this appointment?');
+      if (!ok) return;
+      const apptId = b.dataset.cancel;
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', apptId)
+        .eq('patient_id', currentUser.id);
+      if (error){
+        showToast('error', 'Cancel failed', error.message);
+        return;
+      }
+      showToast('success', 'Cancelled', 'Appointment has been cancelled.');
+      loadAppointments(apptPage);
+      initDashboard();
+    });
+  });
+
+  buildPagination(document.getElementById('apptPag'), document.getElementById('apptPagInfo'), page, PAGE_SIZE, data.length, loadAppointments);
+}
+
+/* ================= PRESCRIPTIONS (real data) ================= */
+function initPrescriptions(){ loadPrescriptions(1); }
+async function loadPrescriptions(page){
+  const wrap = document.getElementById('rxTableWrap');
+  wrap.innerHTML = '<div class="state-box">Loading…</div>';
+
+  const { data, error } = await supabase
+    .from('prescriptions')
+    .select(`
+      id, status, external_drugs_note, created_at,
+      prescription_items ( id, dosage, frequency, duration, quantity, price_at_time, drug_stock ( drug_name, unit ) )
+    `)
+    .eq('patient_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error || !data){
+    wrap.innerHTML = buildTable([], [], { emptyText:'Error loading prescriptions.' });
+    return;
+  }
+
+  wrap.innerHTML = buildTable([
+    { label:'Status', render:r => badge(r.status) },
+    { label:'External Drugs', render:r => r.external_drugs_note ? escHtml(r.external_drugs_note) : emptyIcon() },
+    { label:'Prescribed On', render:r => formatDate(r.created_at) },
+    { label:'Items', render:r => '<ul style="margin:0;padding-left:16px">' + r.prescription_items.map(item =>
+        `<li>${escHtml(item.drug_stock.drug_name)} — ${escHtml(item.dosage)}, ${escHtml(item.frequency)}, ${escHtml(item.duration)}, qty: ${item.quantity} (${formatCurrency(item.price_at_time)})</li>`
+      ).join('') + '</ul>' },
+  ], data, { emptyText:'No prescriptions yet. Visit a doctor to get started!' });
+
+  buildPagination(document.getElementById('rxPag'), document.getElementById('rxPagInfo'), page, PAGE_SIZE, data.length, loadPrescriptions);
+}
+
+/* ================= PAYMENTS (real data) ================= */
+function initPayments(){ loadPayments(1); }
+async function loadPayments(page){
+  const wrap = document.getElementById('payTableWrap');
+  wrap.innerHTML = '<div class="state-box">Loading…</div>';
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, payment_code, amount, status, payment_method, payment_reference, created_at')
+    .eq('patient_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error || !data){
+    wrap.innerHTML = buildTable([], [], { emptyText:'Error loading payments.' });
+    return;
+  }
+
+  wrap.innerHTML = buildTable([
+    { label:'Reference', render:r => escHtml(r.payment_code || r.id) },
+    { label:'Amount', render:r => formatCurrency(r.amount) },
+    { label:'Status', render:r => badge(r.status) },
+    { label:'Date', render:r => formatDateTime(r.created_at) },
+    { label:'Actions', render:r => {
+        if (r.status === 'unpaid'){
+          return `<button class="btn-primary btn-sm" data-pay="${escHtml(r.id)}">Submit Payment</button>`;
+        }
+        if (r.status === 'paid'){
+          return `<button class="btn-secondary btn-sm" data-receipt="${escHtml(r.id)}"><i class="ph ph-eye"></i> View Receipt</button>`;
+        }
+        return emptyIcon();
+      } },
+  ], data, { emptyText:'No payments yet.' });
+
+  wrap.querySelectorAll('[data-pay]').forEach(b => {
+    b.addEventListener('click', () => showPaymentModal(b.dataset.pay));
+  });
+  wrap.querySelectorAll('[data-receipt]').forEach(b => {
+    const row = data.find(p => String(p.id) === b.dataset.receipt);
+    b.addEventListener('click', () => showReceiptModal(row));
+  });
+
+  buildPagination(document.getElementById('payPag'), document.getElementById('payPagInfo'), page, PAGE_SIZE, data.length, loadPayments);
+}
+
+function showPaymentModal(paymentId){
+  const bd = document.createElement('div');
+  bd.className = 'modal-backdrop';
+  bd.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-title">Submit Payment</div>
+      <div class="form-field" style="margin-bottom:12px">
+        <label class="form-label">Payment Method</label>
+        <input type="text" class="form-input" id="payModalMethod" placeholder="e.g. transfer, card" />
+      </div>
+      <div class="form-field" style="margin-bottom:12px">
+        <label class="form-label">Payment Reference</label>
+        <input type="text" class="form-input" id="payModalRef" placeholder="Transaction reference" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-act="cancel">Cancel</button>
+        <button class="btn-primary" data-act="submit">Submit</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bd);
+  bd.addEventListener('click', e => { if (e.target === bd) bd.remove(); });
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => bd.remove());
+  bd.querySelector('[data-act="submit"]').addEventListener('click', async () => {
+    const method = bd.querySelector('#payModalMethod').value.trim();
+    const reference = bd.querySelector('#payModalRef').value.trim();
+    if (!method || !reference){
+      showToast('error', 'Missing fields', 'Please enter both payment method and reference.');
+      return;
+    }
+    const { error } = await supabase
+      .from('payments')
+      .update({ status: 'pending_verification', payment_method: method, payment_reference: reference })
+      .eq('id', paymentId)
+      .eq('patient_id', currentUser.id);
+    if (error){
+      showToast('error', 'Payment submission failed', error.message);
+      return;
+    }
+    bd.remove();
+    showToast('success', 'Payment submitted', 'Awaiting verification.');
+    loadPayments(1);
+  });
+}
+
+function showReceiptModal(pay){
+  const logoEl = document.querySelector('.brand-logo-img');
+  const logoSrc = logoEl ? logoEl.src : '';
+  const logoHtml = logoSrc
+    ? `<div style="width:52px;height:52px;border-radius:12px;background:var(--brand-grad);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;overflow:hidden;border:2.5px solid #0D6B4E;box-shadow:0 4px 12px rgba(13,107,78,0.35);"><img src="${logoSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:9px;" /></div>`
+    : `<div style="width:52px;height:52px;border-radius:12px;background:var(--brand-grad);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><i class="ph ph-hospital" style="font-size:26px;color:#fff;"></i></div>`;
+  const bd = document.createElement('div');
+  bd.className = 'modal-backdrop';
+  bd.innerHTML = `
+    <div class="receipt-card" id="receiptPrintable">
+      <div class="receipt-head">
+        ${logoHtml}
+        <h2>FUD Health Centre</h2>
+        <p>Federal University Dutse · Official Receipt</p>
+      </div>
+      <div class="receipt-row"><strong>Reference</strong><span>${escHtml(pay.payment_code || pay.id)}</span></div>
+      <div class="receipt-row"><strong>Patient</strong><span>${escHtml(window.currentProfile?.name||'—')}</span></div>
+      <div class="receipt-row"><strong>Date</strong><span>${formatDateTime(pay.created_at)}</span></div>
+      <div class="receipt-row"><strong>Method</strong><span>${formatMethod(pay.payment_method)}</span></div>
+      <div class="receipt-row"><strong>Payment Ref</strong><span>${escHtml(pay.payment_reference || '—')}</span></div>
+      <div class="receipt-amount">${formatCurrency(pay.amount)}</div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-act="close">Close</button>
+        <button class="btn-primary" data-act="print"><i class="ph ph-printer"></i> Print</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bd);
+  bd.addEventListener('click', e => { if (e.target === bd) bd.remove(); });
+  bd.querySelector('[data-act="close"]').addEventListener('click', () => bd.remove());
+  bd.querySelector('[data-act="print"]').addEventListener('click', () => window.print());
+}
+
+
+
+
+
+
+/* ================= CUSTOM SELECT ================= */
+const CS_STATE = {};
+function _csClose(id){
+  const wrap = document.getElementById(id);
+  if (!wrap) return;
+  wrap.classList.remove('open');
+}
+function _csCloseAll(except){
+  document.querySelectorAll('.custom-select-wrap.open').forEach(w => { if (w.id !== except) w.classList.remove('open'); });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.custom-select-wrap')) _csCloseAll();
+});
+function _csRender(id){
+  const wrap = document.getElementById(id);
+  const st = CS_STATE[id];
+  if (!wrap || !st) return;
+  const sel = st.options.find(o => String(o.value) === String(st.value));
+  const labelText = sel ? sel.label : (st.placeholder || 'Select…');
+  const cls = sel ? '' : ' placeholder';
+  const opts = st.options.length
+    ? st.options.map(o => `<div class="cs-option${String(o.value)===String(st.value)?' active':''}${o.disabled?' disabled':''}" data-v="${escHtml(o.value)}">${escHtml(o.label)}${String(o.value)===String(st.value)?'<i class="ph ph-check"></i>':''}</div>`).join('')
+    : '<div class="cs-option disabled">No options</div>';
+  wrap.innerHTML = `<button type="button" class="custom-select-trigger"><span class="cs-label${cls}">${escHtml(labelText)}</span><i class="ph ph-caret-down cs-caret"></i></button><div class="custom-select-options">${opts}</div>`;
+  wrap.querySelector('.custom-select-trigger').addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = wrap.classList.contains('open');
+    _csCloseAll(id);
+    wrap.classList.toggle('open', !isOpen);
+  });
+  wrap.querySelectorAll('.cs-option').forEach(opt => {
+    if (opt.classList.contains('disabled')) return;
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      const v = opt.dataset.v;
+      setCustomSelectValue(id, v);
+      wrap.classList.remove('open');
+      if (st.onChange) st.onChange(v);
+    });
+  });
+}
+function initCustomSelect(id, options, opts={}){
+  const wrap = document.getElementById(id);
+  if (!wrap) return;
+  CS_STATE[id] = {
+    options: options || [],
+    value: opts.value !== undefined ? opts.value : (wrap.dataset.csDefault || ''),
+    placeholder: opts.placeholder || wrap.dataset.csPlaceholder || 'Select…',
+    onChange: opts.onChange || null,
+  };
+  _csRender(id);
+}
+function populateCustomSelect(id, options){
+  if (!CS_STATE[id]) initCustomSelect(id, options);
+  else {
+    CS_STATE[id].options = options || [];
+    if (!options.find(o => String(o.value) === String(CS_STATE[id].value))) CS_STATE[id].value = '';
+    _csRender(id);
+  }
+}
+function getCustomSelectValue(id){ return CS_STATE[id]?.value || ''; }
+function setCustomSelectValue(id, v){
+  if (!CS_STATE[id]) return;
+  CS_STATE[id].value = v == null ? '' : String(v);
+  _csRender(id);
+}
+function setCustomSelectOnChange(id, fn){
+  if (!CS_STATE[id]) return;
+  CS_STATE[id].onChange = fn;
+}
+
+
+/* ══════════════════════════════════════
+   Dynamically measure the fixed
+   topbar + desktop nav strip (or mobile topbar) so
+   .main never gets tucked underneath them, regardless
+   of how many rows the nav wraps into.
+══════════════════════════════════════ */
+function updateMainTopOffset() {
+  const topbarShell = document.querySelector('.topbar-shell');
+  const navWrapper   = document.getElementById('desktopNavWrapper');
+  let offset = 0;
+
+  if (topbarShell) {
+    const r = topbarShell.getBoundingClientRect();
+    offset = Math.max(offset, r.bottom);
+  }
+  if (navWrapper && getComputedStyle(navWrapper).display !== 'none') {
+    const r = navWrapper.getBoundingClientRect();
+    offset = Math.max(offset, r.bottom);
+  }
+
+  const gap = 16;
+  document.documentElement.style.setProperty('--main-top-offset', `${Math.ceil(offset + gap)}px`);
+}
+
+window.addEventListener('load', updateMainTopOffset);
+window.addEventListener('resize', updateMainTopOffset);
+
+/* ================= EVENTS ================= */
+document.addEventListener('DOMContentLoaded', () => {
+  renderNav();
+  applyThemeIcon();
+  updateMainTopOffset();
+  setTimeout(updateMainTopOffset, 300);
+
+  document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+  document.getElementById('topbarLogoutBtn').addEventListener('click', doLogout);
+  document.getElementById('drawerLogoutBtn').addEventListener('click', doLogout);
+  document.getElementById('hamburgerBtn').addEventListener('click', openDrawer);
+  document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer);
+  document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer);
+
+  // Refresh dashboard button
+  document.getElementById('dashRefreshBtn').addEventListener('click', () => {
+    const icon = document.getElementById('dashRefreshIcon');
+    icon.style.transition = 'transform 0.6s ease';
+    icon.style.transform = 'rotate(360deg)';
+    setTimeout(() => { icon.style.transition = 'none'; icon.style.transform = 'rotate(0deg)'; }, 650);
+    initDashboard();
+    showToast('success', 'Refreshed', 'Dashboard updated with latest data.');
+  });
+
+  // ===== Custom selects init =====
+  initCustomSelect('apptDoctor', []);
+
+  document.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.jump)));
+
+  // Appointments — open/close booking panel
+  const toggleApptForm = document.getElementById('toggleApptForm');
+  const apptFormWrap = document.getElementById('apptFormWrap');
+  toggleApptForm.addEventListener('click', () => {
+    apptFormWrap.classList.toggle('open');
+  });
+  document.getElementById('apptCancelBtn').addEventListener('click', () => {
+    apptFormWrap.classList.remove('open');
+    document.getElementById('bookStep2').style.display = 'none';
+    document.getElementById('bookStep3').style.display = 'none';
+    selectedSlot = null;
+  });
+  document.getElementById('apptCancelBtn2').addEventListener('click', () => {
+    apptFormWrap.classList.remove('open');
+    document.getElementById('bookStep2').style.display = 'none';
+    document.getElementById('bookStep3').style.display = 'none';
+    selectedSlot = null;
+  });
+
+  checkAuth();
+});
+</script>
+</body>
+</html>
