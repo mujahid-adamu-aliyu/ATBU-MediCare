@@ -1,0 +1,2712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>ATBU MediCare — Doctor Dashboard</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('atbu-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.2/src/duotone/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.2/src/regular/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.2/src/fill/style.css" />
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
+<style>
+
+:root{
+  --primary:#1E7FB8; --primary-mid:#2C97D6; --primary-light:#5CB8E4;
+  --accent-green:#1E8449; --accent-gold:#F4C430;
+  --bg:#F0F9FD; --panel-bg:#FFFFFF; --neu-bg:#FFFFFF;
+  --neu-shadow-d:#c9e4f0; --neu-shadow-l:#ffffff;
+  --text:#0F172A; --text-muted:#64748B;
+  --input-bg:#FFFFFF; --input-border:#CBD5E1; --input-bg-err:#FEF2F2;
+  --card-border:rgba(255,255,255,0.80); --card-border-solid:#CBD5E1;
+  --success:#1E8449; --error:#EF4444; --warning:#F59E0B; --info:#2563EB; --white:#FFFFFF;
+  --shadow-rgb:30,127,184;
+  --radius-card:20px; --radius-input:12px; --radius-btn:10px;
+  --overlay-grad:linear-gradient(150deg,#2C97D6 0%,#1E7FB8 100%);
+  --brand-grad:linear-gradient(135deg,#2C97D6 0%,#1E7FB8 100%);
+  --content-max:1200px;
+  --med-icon:rgba(30,127,184,0.10);
+}
+[data-theme="dark"]{
+  --primary:#5CB8E4; --primary-mid:#2C97D6; --primary-light:#8ECFEE;
+  --accent-green:#2FA05E; --accent-gold:#F4C430;
+  --bg:#0E1A22; --panel-bg:#142833; --neu-bg:#12242E;
+  --neu-shadow-d:#081117; --neu-shadow-l:#1E3A48;
+  --text:#EAF6FB; --text-muted:#8FB3C3;
+  --input-bg:#102530; --input-border:#28455A; --input-bg-err:#2A1018;
+  --card-border:rgba(92,184,228,0.22); --card-border-solid:#22364A;
+  --success:#2FA05E; --error:#F87171; --warning:#FBBF24; --info:#60A5FA; --white:#EAF6FB;
+  --shadow-rgb:92,184,228;
+  --overlay-grad:linear-gradient(150deg,#5CB8E4 0%,#1E7FB8 100%);
+  --brand-grad:linear-gradient(135deg,#5CB8E4 0%,#1E7FB8 100%);
+  --med-icon:rgba(92,184,228,0.14);
+  --stat-amber:#FBBF24; --stat-blue:#60A5FA;
+
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none}
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
+.drawer-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;}
+html,body{background:var(--bg);color:var(--text);font-family:'Poppins',sans-serif;min-height:100vh;transition:background 250ms ease,color 250ms ease}
+body{overflow-x:hidden;overscroll-behavior-y:none}
+.blob{position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none}
+.blob1{width:500px;height:500px;background:rgba(16,185,129,0.12);top:-150px;left:-150px;animation:blobDrift1 22s ease-in-out infinite alternate}
+.blob2{width:420px;height:420px;background:rgba(var(--shadow-rgb),0.10);bottom:-120px;right:-120px;filter:blur(80px);animation:blobDrift2 18s ease-in-out infinite alternate}
+@keyframes blobDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(120px,80px) scale(1.15)}}
+@keyframes blobDrift2{0%{transform:translate(0,0) scale(1.1)}100%{transform:translate(-100px,-60px) scale(1)}}
+
+/* Medical snow background */
+.med-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.med-bg i{position:absolute;color:var(--med-icon);font-size:26px;top:-40px;animation:medFall linear infinite;opacity:.9}
+@keyframes medFall{
+  0%{transform:translateY(-40px) rotate(0deg);opacity:0}
+  10%{opacity:.9}
+  90%{opacity:.9}
+  100%{transform:translateY(105vh) rotate(360deg);opacity:0}
+}
+.receipt-med-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:var(--radius-card);z-index:0}
+.receipt-med-bg i{position:absolute;color:var(--med-icon);font-size:22px;top:-30px;animation:medFall linear infinite;opacity:.8}
+@media print{
+  .med-bg,.receipt-med-bg,.blob{display:none !important}
+}
+
+#authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;font-size:16px;color:var(--text-muted);gap:14px;position:relative;z-index:1;padding:20px;text-align:center}
+.auth-logo-pulse{width:64px;height:64px;overflow:hidden;display:flex;align-items:center;justify-content:center;animation:authLogoPulse 0.85s cubic-bezier(0.45,0,0.55,1) infinite}
+.auth-logo-pulse img{width:100%;height:100%;object-fit:cover;display:block}
+@keyframes authLogoPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.auth-ring-label{font-family:'Poppins',sans-serif;font-weight:600;font-size:13.5px;color:var(--text-muted);letter-spacing:.01em}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 0.8s linear infinite}
+
+.layout{position:relative;z-index:1}
+.topbar-shell{position:fixed;top:0;left:0;right:0;z-index:90;max-width:var(--content-max);margin:12px auto 0;padding-inline:clamp(64px,10vw,120px);pointer-events:none}
+@media(min-width:769px){
+  .topbar-shell{max-width:none;margin:14px 16px 0;padding-inline:0}
+}
+.topbar{position:relative;width:100%;padding:10px 20px;background:color-mix(in srgb, var(--panel-bg) 78%, transparent);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.12);display:flex;align-items:center;gap:14px;pointer-events:auto;transition:box-shadow 260ms ease}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:42px;height:42px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;overflow:hidden;flex-shrink:0}
+.brand-icon img{width:100%;height:100%;object-fit:cover;display:block}
+.brand-name{font-weight:800;font-size:15px;color:var(--text);line-height:1.1;letter-spacing:.01em}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer;font-size:18px;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1)}
+.icon-btn:hover{transform:translateY(-2px) scale(1.08);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.18);border-color:var(--primary)}
+.icon-btn:active{transform:translateY(0) scale(0.95)}
+.icon-btn i{transition:transform 220ms cubic-bezier(0.34,1.56,0.64,1)}
+.icon-btn:hover i{transform:rotate(-8deg)}
+.logout-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);font:600 13px 'Poppins';cursor:pointer;transition:all 180ms ease}
+.logout-btn:hover{background:rgba(239,68,68,0.18)}
+.desktop-logout-btn{display:inline-flex}
+@media(max-width:768px){.desktop-logout-btn{display:none}}
+.hamburger{display:none}
+
+.topnav-strip-wrapper{position:fixed;top:78px;z-index:89;left:0;right:0;max-width:var(--content-max);margin:14px auto 0;padding-inline:clamp(64px,10vw,120px);pointer-events:none}
+.topnav-strip-outer{padding:14px 16px;background:color-mix(in srgb, var(--panel-bg) 78%, transparent);backdrop-filter:blur(14px) saturate(160%);border:1.5px solid var(--card-border-solid);border-radius:24px;box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.08);pointer-events:auto}
+.topnav-strip{display:flex;flex-wrap:wrap;gap:10px}
+.topnav-strip .nav-item{white-space:nowrap;min-width:0;flex:1 1 120px}
+@media(max-width:1100px){.topnav-strip{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.topnav-strip .nav-item{flex:0 0 auto}}
+.nav-item{display:flex;align-items:center;justify-content:center;gap:9px;padding:0 16px;min-height:44px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:10px;color:var(--text-muted);font:700 13px 'Poppins',sans-serif;opacity:.6;cursor:pointer;transition:all 200ms ease}
+.nav-item i{font-size:18px}
+.nav-item:hover{opacity:.9;transform:translateY(-1px)}
+.nav-item.active{color:#fff;border-color:transparent;background:var(--brand-grad);box-shadow:0 6px 20px rgba(var(--shadow-rgb),0.40);opacity:1}
+
+/* ===================== DESKTOP ISLAND SIDEBAR ===================== */
+/* Matches admin/patient dashboards' .island-nav component exactly (profile
+   block with name + role badge, icon-only nav rail with hover tooltips,
+   footer with text), replacing the mobile-only pill bar on desktop widths. */
+@media(min-width:769px){
+  .topnav-strip-wrapper{display:none !important}
+}
+:root{ --island-w-collapsed:68px; --island-w-expanded:250px; }
+.island-nav{
+  display:none;
+  position:fixed; top:var(--main-top-offset,90px); bottom:12px; left:16px; z-index:88;
+  width:var(--island-w-expanded);
+  background:color-mix(in srgb, var(--panel-bg) 86%, transparent);
+  backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%);
+  border:1.5px solid var(--card-border-solid); border-radius:var(--radius-card);
+  box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.14);
+  flex-direction:column; overflow:hidden;
+  transition:box-shadow 260ms ease;
+}
+@media(min-width:769px){ .island-nav{ display:flex } }
+.island-label{ display:inline-block; opacity:1; }
+
+.island-profile{ display:flex; align-items:center; gap:10px; padding:10px 14px 16px; flex-shrink:0; min-width:0; cursor:default; transition:transform 220ms ease }
+.island-profile:hover{ transform:translateX(2px) }
+.island-avatar{
+  width:38px; height:38px; border-radius:50%; background:var(--brand-grad); color:#fff;
+  display:flex; align-items:center; justify-content:center; font:800 14px 'Poppins',sans-serif;
+  flex-shrink:0; box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.30);
+  transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 260ms ease;
+}
+.island-profile:hover .island-avatar{ transform:scale(1.08) rotate(-4deg); box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.45) }
+.island-profile-meta{ min-width:0; overflow:hidden }
+.island-profile-name{ font:700 13.5px 'Poppins',sans-serif; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.island-profile-badge{
+  display:inline-block; margin-top:3px; font:700 10px 'Poppins',sans-serif; text-transform:uppercase; letter-spacing:.06em;
+  color:var(--primary); background:rgba(var(--shadow-rgb),0.10); border-radius:10px; padding:2px 8px; white-space:nowrap;
+  transition:background 220ms ease, letter-spacing 220ms ease;
+}
+.island-profile:hover .island-profile-badge{ background:rgba(var(--shadow-rgb),0.18); letter-spacing:.09em }
+
+.island-divider{ height:1px; background:var(--card-border-solid); margin:0 14px; flex-shrink:0; opacity:.7 }
+
+.island-nav-list{ flex:1; display:flex; flex-direction:column; gap:6px; padding:14px 10px; overflow-y:auto; overflow-x:hidden; min-height:0; scrollbar-width:none }
+.island-nav-list::-webkit-scrollbar{ display:none }
+.island-nav-item{
+  position:relative; display:flex; align-items:center; gap:12px; min-height:44px;
+  border-radius:14px; padding:0 13px; color:var(--text-muted); background:transparent; border:none;
+  cursor:pointer; font:700 13px 'Poppins',sans-serif; transition:background 220ms ease, color 220ms ease, transform 220ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 220ms ease;
+  text-align:left; width:100%; justify-content:flex-start;
+  opacity:0; transform:translateX(-10px); animation:islandItemIn 420ms ease forwards;
+}
+@keyframes islandItemIn{ to{ opacity:1; transform:translateX(0) } }
+.island-nav-item:nth-child(1){ animation-delay:40ms }
+.island-nav-item:nth-child(2){ animation-delay:80ms }
+.island-nav-item:nth-child(3){ animation-delay:120ms }
+.island-nav-item:nth-child(4){ animation-delay:160ms }
+.island-nav-item:nth-child(5){ animation-delay:200ms }
+.island-nav-item:nth-child(6){ animation-delay:240ms }
+.island-nav-item:nth-child(7){ animation-delay:280ms }
+.island-nav-item:nth-child(8){ animation-delay:320ms }
+.island-nav-item i{ font-size:19px; flex-shrink:0; width:22px; text-align:center; transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1) }
+.island-nav-item:hover{ background:rgba(var(--shadow-rgb),0.08); color:var(--text); transform:translateX(4px) }
+.island-nav-item:hover i{ transform:scale(1.15) rotate(-6deg) }
+.island-nav-item:active{ transform:translateX(4px) scale(0.97) }
+.island-nav-item.active{ background:rgba(var(--shadow-rgb),0.12); color:var(--primary); box-shadow:0 2px 10px rgba(var(--shadow-rgb),0.10) }
+.island-nav-item.active::before{
+  content:''; position:absolute; left:-10px; top:8px; bottom:8px; width:4px; border-radius:0 4px 4px 0; background:var(--brand-grad);
+  transition:top 260ms cubic-bezier(0.34,1.56,0.64,1), bottom 260ms cubic-bezier(0.34,1.56,0.64,1);
+}
+.island-nav-item:focus-visible{ outline:2px solid var(--primary); outline-offset:2px }
+
+.island-footer{ flex-shrink:0; padding:14px; display:flex; align-items:center; gap:10px; min-width:0; cursor:default; transition:transform 220ms ease }
+.island-footer:hover{ transform:translateX(2px) }
+.island-footer-glyph{
+  width:30px; height:30px; border-radius:9px; background:rgba(var(--shadow-rgb),0.10); color:var(--primary);
+  display:flex; align-items:center; justify-content:center; font:800 11px 'Poppins',sans-serif; flex-shrink:0;
+  transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1);
+}
+.island-footer:hover .island-footer-glyph{ transform:scale(1.08) rotate(4deg) }
+.island-footer-lines{ min-width:0; overflow:hidden }
+.island-footer-lines div{ font-size:10.5px; line-height:1.5; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.island-footer-lines div:first-child{ font-weight:700; color:var(--text) }
+@media (prefers-reduced-motion:reduce){
+  .island-nav-item{ opacity:1; transform:none; animation:none }
+  .island-profile, .island-footer, .island-avatar, .island-footer-glyph, .island-profile-badge, .island-nav-item i{ transition:none }
+}
+
+.main{max-width:var(--content-max);margin:0 auto 60px;padding:clamp(24px,5vw,60px) clamp(64px,10vw,120px);padding-top:var(--main-top-offset,200px);position:relative;z-index:1}
+@media(min-width:769px){ .main{ max-width:none; padding-left:calc(16px + var(--island-w-expanded) + 24px); padding-right:32px } }
+.page{display:none}
+.page.active{display:block;animation:fadeUp 420ms cubic-bezier(0.22,1,0.36,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){ .page.active{ animation:none } }
+
+.page-title{font-size:26px;font-weight:800;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.page-title::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--brand-grad)}
+.page-title-sub{font-size:13px;color:var(--text-muted);margin-bottom:20px;font-weight:500}
+.page-header-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-header-row .page-title{margin-bottom:0}
+.appt-header-row{align-items:center}
+#page-appointments .page-title{margin-bottom:14px}
+.page-header-actions{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.page-header-actions .custom-select-wrap{display:flex}
+.page-header-actions .custom-select-trigger{height:42px;padding-top:0;padding-bottom:0}
+.page-header-actions .btn-primary{height:42px;padding-top:0;padding-bottom:0}
+.page-header-actions .icon-btn{height:42px;width:42px;flex-shrink:0}
+
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:28px}
+.stat-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:22px 24px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 6px rgba(0,0,0,0.04),0 10px 24px rgba(var(--shadow-rgb),0.08);position:relative;overflow:hidden;transition:transform 260ms cubic-bezier(0.34,1.4,0.64,1),box-shadow 260ms ease,border-color 260ms ease}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brand-grad);opacity:.35;transition:opacity 220ms ease}
+.stat-card:hover{transform:translateY(-5px) scale(1.015);box-shadow:0 8px 16px rgba(0,0,0,0.06),0 18px 38px rgba(var(--shadow-rgb),0.18);border-color:rgba(var(--shadow-rgb),0.35)}
+.stat-card:hover::before{opacity:1}
+.stat-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);font-size:22px;flex-shrink:0;transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1)}
+.stat-card:hover .stat-icon{transform:scale(1.1) rotate(-6deg)}
+.stat-icon.amber{background:linear-gradient(135deg,rgba(245,158,11,0.18),rgba(245,158,11,0.08));border-color:rgba(245,158,11,0.25);color:var(--stat-amber,#F59E0B)}
+.stat-icon.blue{background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(37,99,235,0.08));border-color:rgba(37,99,235,0.25);color:var(--stat-blue,#2563EB)}
+[data-theme="dark"] .stat-icon.amber{background:linear-gradient(135deg,rgba(251,191,36,0.22),rgba(251,191,36,0.10));border-color:rgba(251,191,36,0.30)}
+[data-theme="dark"] .stat-icon.blue{background:linear-gradient(135deg,rgba(96,165,250,0.22),rgba(96,165,250,0.10));border-color:rgba(96,165,250,0.30)}
+.stat-meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-value{font-size:28px;font-weight:800;color:var(--text);line-height:1.1}
+.stat-value.small{font-size:18px;line-height:1.2}
+.stat-value .badge{margin-left:8px;vertical-align:middle;font-size:10px;padding:2px 8px}
+@media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stat-grid{grid-template-columns:1fr}}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:15px;font-weight:700;color:var(--text)}
+
+.btn-primary{background:var(--brand-grad);color:#fff;border:none;border-radius:10px;padding:10px 20px;font:600 13px 'Poppins';box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.35);cursor:pointer;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1);display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.45)}
+.btn-primary:active{transform:translateY(0) scale(0.98)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-primary i{transition:transform 220ms cubic-bezier(0.34,1.56,0.64,1)}
+.btn-primary:hover i{transform:scale(1.15) rotate(-6deg)}
+.btn-secondary{background:var(--panel-bg);color:var(--text);border:1.5px solid var(--card-border-solid);border-radius:10px;padding:10px 20px;font:600 13px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1)}
+.btn-secondary:hover{background:color-mix(in srgb, var(--primary) 6%, var(--panel-bg));transform:translateY(-2px) scale(1.03);border-color:var(--primary)}
+.btn-secondary:active{transform:translateY(0) scale(0.98)}
+.btn-danger{background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:8px 16px;font:600 12px 'Poppins';cursor:pointer;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1)}
+.btn-danger:hover{background:rgba(239,68,68,0.20);transform:translateY(-2px) scale(1.03)}
+.btn-danger:active{transform:translateY(0) scale(0.98)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.icon-btn.eye-btn{width:32px;height:32px;font-size:15px;color:var(--primary)}
+
+.table-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);overflow:hidden;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.table-scroll{overflow-x:auto;position:relative}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:rgba(var(--shadow-rgb),0.06);padding:12px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);font-weight:700;border-bottom:1.5px solid var(--card-border-solid);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--card-border-solid);color:var(--text);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+tr:last-child td{border-bottom:none}
+tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.6)}
+tbody tr:nth-child(even) td{background:rgba(16,185,129,0.04)}
+[data-theme="dark"] tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.02)}
+[data-theme="dark"] tbody tr:nth-child(even) td{background:rgba(46,204,143,0.05)}
+td{transition:background 200ms ease}
+tbody tr:hover td{background:rgba(var(--shadow-rgb),0.08) !important}
+td.cell-id{font-family:'Poppins',monospace;font-weight:700;font-style:italic;color:var(--primary);font-size:12.5px;letter-spacing:.04em}
+td.cell-date{font-weight:700;font-style:italic;color:var(--text);letter-spacing:.03em}
+.pay-drugs{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge.pending,.badge.unpaid{color:#F59E0B;background:rgba(245,158,11,0.12)}
+.badge.approved,.badge.active,.badge.paid{color:#1E8449;background:rgba(30,132,73,0.12)}
+.badge.cancelled,.badge.missed{color:#EF4444;background:rgba(239,68,68,0.12)}
+.badge.deactivated{color:var(--text-muted);background:rgba(148,163,184,0.16)}
+.badge.completed,.badge.dispensed,.badge.pending_verification{color:#2563EB;background:rgba(37,99,235,0.12)}
+.badge.day{color:#D97706;background:rgba(245,158,11,0.12)}
+.badge.night{color:#6366F1;background:rgba(99,102,241,0.12)}
+/* --- overflow safety for long dynamic text --- */
+td.cell-id{overflow-wrap:anywhere;word-break:break-word}
+.pp-appt-code,.pp-head-name,.consult-pat-name,.brand-name{overflow-wrap:anywhere;word-break:break-word;min-width:0}
+.pp-appt-item{min-width:0}
+.pp-appt-item>*{min-width:0}
+
+.form-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;margin-bottom:24px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.form-field{display:flex;flex-direction:column;min-width:0}
+.form-field.full{grid-column:1 / -1}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;transition:border-color 180ms ease,box-shadow 180ms ease}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15);outline:none}
+.form-textarea{min-height:90px;resize:vertical}
+.form-actions{margin-top:20px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.disclaimer{font-size:12px;color:var(--text-muted);font-style:italic;margin-top:12px}
+.form-input.is-invalid,.form-textarea.is-invalid,.custom-select-wrap.is-invalid .custom-select-trigger{border-color:var(--error) !important;background:var(--input-bg-err)}
+.field-error{font-size:11.5px;color:var(--error);margin-top:5px;font-weight:600;display:none}
+.field-error.show{display:block}
+.form-input.is-muted,.custom-select-wrap.is-muted .custom-select-trigger{background:rgba(148,163,184,0.10);color:var(--text-muted);cursor:not-allowed;opacity:.85}
+.form-input:disabled,.form-input[readonly]{background:rgba(148,163,184,0.10);color:var(--text-muted);cursor:not-allowed}
+
+.state-box{text-align:center;padding:48px 24px;color:var(--text-muted);font-size:14px}
+.state-box i{font-size:36px;display:block;margin-bottom:10px;color:var(--text-muted);opacity:.7}
+.state-box .cta{margin-top:14px}
+
+/* Skeleton shimmer */
+.sk{position:relative;overflow:hidden;background:rgba(148,163,184,0.14);border-radius:8px;display:inline-block}
+[data-theme="dark"] .sk{background:rgba(255,255,255,0.06)}
+.sk::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);animation:shimmer 1.4s infinite}
+[data-theme="dark"] .sk::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.sk-line{display:block;height:12px;border-radius:6px;margin:4px 0}
+.sk-stat{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:22px 24px;display:flex;align-items:center;gap:16px}
+.sk-stat .sk-circle{width:48px;height:48px;border-radius:14px}
+.sk-stat .sk-meta{flex:1}
+.sk-row{display:flex;gap:10px;padding:14px 16px;border-bottom:1px solid var(--card-border-solid)}
+.sk-row .sk-line{flex:1}
+.sk-rx{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:18px 22px;margin-bottom:12px}
+
+/* Slot cards */
+.slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:8px}
+.slot-card{background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all 180ms ease;position:relative}
+.slot-card:hover:not(.disabled){border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.15)}
+.slot-card.selected{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg));box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.20)}
+.slot-card.disabled{opacity:.5;cursor:not-allowed}
+.slot-date{font-weight:700;font-size:13px;color:var(--text)}
+.slot-shift{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.slot-spots{font-size:12px;color:var(--primary);font-weight:600;margin-top:2px}
+
+/* Prescription accordion */
+.rx-list{display:flex;flex-direction:column;gap:12px}
+.rx-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-left:4px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);overflow:hidden;transition:box-shadow 200ms ease}
+.rx-card[data-status="active"]{border-left-color:var(--success)}
+.rx-card[data-status="dispensed"]{border-left-color:var(--info)}
+.rx-card[data-status="cancelled"]{border-left-color:var(--error)}
+.rx-card[data-status="pending"]{border-left-color:var(--warning,#F59E0B)}
+.rx-card.open{box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.12)}
+.rx-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 22px;cursor:pointer;flex-wrap:wrap}
+.rx-head-left{display:flex;align-items:center;gap:12px;min-width:0}
+.rx-head-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.rx-head-txt{min-width:0}
+.rx-head-title{font-weight:700;font-size:14px;color:var(--text)}
+.rx-head-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.rx-head-right{display:flex;align-items:center;gap:10px}
+.rx-chevron{color:var(--text-muted);font-size:18px;transition:transform 260ms ease}
+.rx-card.open .rx-chevron{transform:rotate(180deg)}
+.rx-body{max-height:0;overflow:hidden;transition:max-height 320ms cubic-bezier(0.34,1.1,0.64,1);padding:0 22px}
+.rx-card.open .rx-body{max-height:1600px;padding-bottom:18px}
+.rx-items{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.rx-item{background:var(--neu-bg);border:1px solid var(--card-border-solid);border-radius:12px;padding:10px 14px;font-size:13px}
+.rx-item strong{color:var(--text);font-weight:700}
+.rx-item-instructions{display:flex;align-items:flex-start;gap:8px;color:var(--text)}
+.rx-item-instructions i{font-size:16px;color:var(--primary);flex-shrink:0;margin-top:1px}
+.rx-item-purchase{display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:11.5px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--card-border-solid)}
+.rx-item-purchase i{font-size:13px;flex-shrink:0}
+.rx-notice{margin-bottom:12px;padding:10px 14px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.22);border-radius:12px;color:var(--info);font-size:12.5px;display:flex;align-items:flex-start;gap:8px}
+
+/* Prescriptions sub-tabs (Transactions / Medical Instructions) */
+.subtab-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.subtab-btn{padding:9px 18px;border-radius:10px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font:600 13px 'Poppins';cursor:pointer;transition:all 180ms ease;display:inline-flex;align-items:center;gap:7px}
+.subtab-btn i{font-size:16px}
+.subtab-btn:hover{border-color:var(--primary);color:var(--text)}
+.subtab-btn.active{background:var(--brand-grad);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.30)}
+.subtab-panel{display:none}
+.subtab-panel.active{display:block}
+
+/* Medical instructions accordion (drug table per prescription) */
+.rx-med-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);overflow:hidden;margin-bottom:14px;transition:box-shadow 200ms ease}
+.rx-med-card.open{box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.12)}
+.rx-med-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 22px;cursor:pointer;flex-wrap:wrap}
+.rx-med-title{font-weight:700;font-size:14px;color:var(--text)}
+.rx-med-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.rx-med-chevron{color:var(--text-muted);font-size:18px;transition:transform 260ms ease;flex-shrink:0}
+.rx-med-card.open .rx-med-chevron{transform:rotate(180deg)}
+.rx-med-body{max-height:0;overflow:hidden;transition:max-height 320ms cubic-bezier(0.34,1.1,0.64,1);padding:0 22px}
+.rx-med-card.open .rx-med-body{max-height:1600px;padding-bottom:20px}
+.rx-med-advice{margin-bottom:12px;padding:10px 14px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.22);border-radius:12px;color:var(--info);font-size:12.5px;display:flex;align-items:flex-start;gap:8px}
+[data-theme="dark"] .rx-med-advice{color:#93C5FD}
+.rx-med-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rx-med-table{width:100%;min-width:520px;font-size:13px;border-collapse:collapse}
+.rx-med-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);padding:8px 10px;border-bottom:1.5px solid var(--card-border-solid);white-space:nowrap}
+.rx-med-table td{padding:9px 10px;border-bottom:1px solid var(--card-border-solid);color:var(--text);white-space:nowrap}
+.rx-med-table tr:last-child td{border-bottom:none}
+.rx-med-drug{display:flex;align-items:center;gap:8px}
+.rx-med-drug i{color:var(--primary);font-size:16px;flex-shrink:0}
+
+.pagination-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-wrap:wrap;gap:10px}
+.pagination-info{font-size:12px;color:var(--text-muted)}
+.pagination{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.page-pill{min-width:34px;height:34px;padding:0 10px;border-radius:10px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font:600 12px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 180ms ease}
+.page-pill:hover:not(:disabled){color:var(--text);transform:translateY(-1px)}
+.page-pill.active{background:var(--brand-grad);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.30)}
+.page-pill:disabled{opacity:.4;cursor:not-allowed}
+
+
+/* ===== Custom select (ported from patient) ===== */
+.custom-select-wrap{position:relative;width:100%;font-family:'Poppins',sans-serif;z-index:1}
+.custom-select-wrap.open{z-index:100}
+.custom-select-trigger{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:border-color 180ms ease,box-shadow 180ms ease;text-align:left}
+.custom-select-trigger:hover{border-color:var(--primary)}
+.custom-select-wrap.open .custom-select-trigger{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15)}
+.custom-select-trigger .cs-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-select-trigger .cs-label.placeholder{color:var(--text-muted)}
+.custom-select-trigger .cs-caret{transition:transform 220ms ease;color:var(--text-muted);font-size:18px;flex-shrink:0}
+.custom-select-wrap.open .cs-caret{transform:rotate(180deg);color:var(--primary)}
+.custom-select-options{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.18);padding:6px;z-index:200;max-height:0;overflow:hidden;opacity:0;transform:translateY(-6px) scaleY(0.96);transform-origin:top center;transition:max-height 240ms cubic-bezier(0.34,1.2,0.64,1),opacity 200ms ease,transform 220ms cubic-bezier(0.34,1.2,0.64,1),padding 200ms ease;pointer-events:none}
+.custom-select-wrap.open .custom-select-options{max-height:280px;overflow-y:auto;opacity:1;transform:translateY(0) scaleY(1);pointer-events:auto}
+.cs-option{padding:10px 12px;border-radius:8px;font:500 13px 'Poppins',sans-serif;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background 140ms ease}
+.cs-option:hover,.cs-option.focused{background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg))}
+.cs-option.active{color:var(--primary);font-weight:700;background:color-mix(in srgb, var(--primary) 10%, var(--panel-bg))}
+.cs-option.disabled{color:var(--text-muted);cursor:not-allowed;opacity:.7}
+.page-header-actions{display:flex;align-items:center;gap:10px}
+.page-header-actions .custom-select-wrap{display:flex}
+.page-header-actions .custom-select-trigger{height:42px;padding-top:0;padding-bottom:0}
+
+/* ===== Appointment history list ===== */
+.appt-list{display:flex;flex-direction:column;gap:10px}
+.appt-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);cursor:pointer;transition:transform 180ms ease,box-shadow 180ms ease,border-color 180ms ease;text-align:left}
+.appt-item:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(var(--shadow-rgb),0.10);border-color:var(--primary)}
+.appt-item .appt-ic{width:42px;height:42px;border-radius:14px;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.appt-item .appt-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.appt-item .appt-title{font-weight:700;font-size:14px;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.appt-item .appt-meta{font-size:12px;color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap}
+.appt-item .appt-chev{color:var(--text-muted);font-size:20px;flex-shrink:0}
+
+/* ===== Toast dragging ===== */
+/* ============ TOASTS (pill capsule) ============ */
+#toastContainer{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:520px;padding:16px 16px 0;box-sizing:border-box;pointer-events:none}
+:root{
+  --warn-ic:#F59E0B; --warn-tint:#FEF3E2; --warn-text:#7C4A03;
+  --info-ic:#2563EB; --info-tint:#E3EFFE; --info-text:#1E3A6E;
+  --succ-ic:#16A34A; --succ-tint:#E4F6EA; --succ-text:#14532D;
+  --err-ic:#EF4444;  --err-tint:#FDE9E9;  --err-text:#7A1F1F;
+}
+[data-theme="dark"]{
+  --warn-tint:#3A2C0E; --warn-text:#F5D48A;
+  --info-tint:#122644; --info-text:#AFCBFB;
+  --succ-tint:#123421; --succ-text:#9EE6BA;
+  --err-tint:#3A1616;  --err-text:#F7B4B4;
+}
+.toast{
+  background:var(--warn-tint);border-radius:16px;border:none;
+  box-shadow:0 8px 24px rgba(15,23,42,0.12);
+  padding:12px 44px 12px 14px;display:flex;gap:10px;align-items:center;position:relative;
+  opacity:0;transform:translateY(-120%);
+  transition:transform .55s cubic-bezier(0.34,1.56,0.64,1),opacity .25s;
+  pointer-events:auto;touch-action:none;cursor:grab;width:fit-content;max-width:100%
+}
+.toast.is-dragging{cursor:grabbing;transition:none !important}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.hide{opacity:0;transform:translateY(-120%)}
+.toast .toast-icon{width:26px;height:26px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0;background:var(--warn-ic)}
+.toast-text{font-weight:600;font-size:0.9rem;line-height:1.3;color:var(--warn-text);white-space:normal;overflow-wrap:break-word}
+.toast.t-info{background:var(--info-tint)}
+.toast.t-info .toast-icon{background:var(--info-ic)}
+.toast.t-info .toast-text{color:var(--info-text)}
+.toast.t-success{background:var(--succ-tint)}
+.toast.t-success .toast-icon{background:var(--succ-ic)}
+.toast.t-success .toast-text{color:var(--succ-text)}
+.toast.t-error{background:var(--err-tint)}
+.toast.t-error .toast-icon{background:var(--err-ic)}
+.toast.t-error .toast-text{color:var(--err-text)}
+.toast.t-warning .toast-text{color:var(--warn-text)}
+.toast-close{position:absolute;top:50%;right:12px;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;color:inherit;opacity:.5;font-size:14px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:10px}
+.toast-close:hover{opacity:.9;background:rgba(0,0,0,0.06)}
+@media(max-width:640px){
+  #toastContainer{padding:12px 12px 0;max-width:100%}
+  .toast{padding:10px 38px 10px 12px;gap:8px;width:100%}
+  .toast .toast-icon{width:24px;height:24px;font-size:13px}
+  .toast-text{font-size:0.84rem}
+}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.45);backdrop-filter:blur(10px);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 200ms ease;overflow-y:auto}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1);max-height:90vh;max-height:90svh;overflow-y:auto;position:relative}
+.modal-card.wide{max-width:560px}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes popInCentered{from{transform:translate(-50%,-50%) scale(.92);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.modal-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px}
+.modal-msg{font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.modal-branded-head{display:flex;align-items:center;gap:12px;padding-bottom:16px;margin-bottom:16px;border-bottom:2px dashed var(--card-border-solid)}
+.modal-branded-head .brand-icon{width:46px;height:46px}
+.modal-branded-head h3{font-size:16px;font-weight:800;color:var(--primary);margin:0;line-height:1.2}
+.modal-branded-head p{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+
+/* Wizard */
+.wizard-progress{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
+.wiz-dot{width:10px;height:10px;border-radius:50%;background:var(--card-border-solid);transition:all 220ms ease}
+.wiz-dot.active{background:var(--brand-grad);width:28px;border-radius:6px;box-shadow:0 2px 8px rgba(var(--shadow-rgb),0.35)}
+.wiz-dot.done{background:var(--primary)}
+.wiz-step{display:none;animation:fadeUp 300ms ease}
+.wiz-step.active{display:block}
+.wiz-step h4{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.wiz-step h4 i{color:var(--primary);font-size:18px}
+.wiz-review{background:var(--neu-bg);border:1px solid var(--card-border-solid);border-radius:12px;padding:14px}
+.wiz-review .rvw-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;gap:12px}
+.wiz-review .rvw-row strong{color:var(--text-muted);font-weight:600}
+.wiz-review .rvw-row span{color:var(--text);font-weight:600;text-align:right}
+
+/* Receipt */
+.receipt-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:32px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1);position:relative;overflow:hidden}
+.receipt-inner{position:relative;z-index:2}
+.receipt-head{text-align:center;margin-bottom:20px;padding-bottom:18px;border-bottom:2px dashed var(--card-border-solid)}
+.receipt-head .brand-icon{margin:0 auto 10px}
+.receipt-head h2{font-size:20px;font-weight:800;color:var(--primary);margin-bottom:4px}
+.receipt-head p{font-size:12px;color:var(--text-muted)}
+.receipt-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px dashed var(--card-border-solid);gap:12px}
+.receipt-row strong{color:var(--text);font-weight:600}
+.receipt-row span{color:var(--text-muted);text-align:right;word-break:break-all}
+.receipt-amount{font-size:22px;font-weight:800;color:var(--primary);text-align:center;margin:18px 0;padding:14px;background:rgba(16,185,129,0.08);border-radius:14px}
+
+.drawer-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.35);backdrop-filter:blur(10px);z-index:95;opacity:0;visibility:hidden;transition:opacity 280ms ease,visibility 280ms ease}
+.drawer-backdrop.open{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(86vw,320px);background:var(--panel-bg);border-left:1px solid var(--card-border);border-top-left-radius:24px;border-bottom-left-radius:24px;box-shadow:-20px 0 50px rgba(0,0,0,0.25);transform:translateX(110%);transition:transform 380ms cubic-bezier(0.34,1.2,0.64,1);z-index:96;display:flex;flex-direction:column;padding:24px}
+.drawer.open{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.drawer-nav{display:flex;flex-direction:column;gap:8px;padding:14px 4px;overflow-y:auto;flex:1}
+.drawer-nav .nav-item{justify-content:flex-start;width:100%;border-radius:10px;padding:12px 16px;min-height:0;font-size:14px;font-weight:500;background:var(--bg);border:none;color:var(--text);box-shadow:none;opacity:1 !important}
+.drawer-nav .nav-item:hover,.drawer-nav .nav-item.active{background:var(--brand-grad);color:#fff}
+.drawer-foot{padding-top:14px;border-top:1px solid var(--card-border-solid)}
+
+/* Custom select */
+.custom-select-wrap{position:relative;width:100%;font-family:'Poppins',sans-serif;z-index:1}
+.custom-select-wrap.open{z-index:100}
+.custom-select-trigger{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:border-color 180ms ease,box-shadow 180ms ease;text-align:left}
+.custom-select-trigger:hover{border-color:var(--primary)}
+.custom-select-wrap.open .custom-select-trigger{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15)}
+.custom-select-trigger .cs-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-select-trigger .cs-label.placeholder{color:var(--text-muted)}
+.custom-select-trigger .cs-caret{transition:transform 220ms ease;color:var(--text-muted);font-size:18px;flex-shrink:0}
+.custom-select-wrap.open .cs-caret{transform:rotate(180deg);color:var(--primary)}
+.custom-select-options{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.18);padding:6px;z-index:200;max-height:0;overflow:hidden;opacity:0;transform:translateY(-6px) scaleY(0.96);transform-origin:top center;transition:max-height 240ms cubic-bezier(0.34,1.2,0.64,1),opacity 200ms ease,transform 220ms cubic-bezier(0.34,1.2,0.64,1),padding 200ms ease;pointer-events:none}
+.custom-select-wrap.open .custom-select-options{max-height:280px;overflow-y:auto;opacity:1;transform:translateY(0) scaleY(1);pointer-events:auto}
+.cs-option{padding:10px 12px;border-radius:8px;font:500 13px 'Poppins',sans-serif;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background 140ms ease}
+.cs-option:hover,.cs-option.focused{background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg))}
+.cs-option.active{color:var(--primary);font-weight:700;background:color-mix(in srgb, var(--primary) 10%, var(--panel-bg))}
+.cs-option.disabled{color:var(--text-muted);cursor:not-allowed;opacity:.7}
+
+/* Custom calendar */
+.cal-input{cursor:pointer;position:relative}
+.cal-input i{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+.cal-popover{position:absolute;top:calc(100% + 6px);left:0;z-index:300;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);box-shadow:0 20px 50px rgba(var(--shadow-rgb),0.20);padding:14px;width:290px;user-select:none;-webkit-user-select:none}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.cal-title{font-weight:700;font-size:13px;color:var(--text);flex:1;text-align:center}
+.cal-title-selects{display:flex;gap:6px;justify-content:center;align-items:center}
+.cal-jump{font:700 12px 'Poppins',sans-serif;color:var(--text);background:var(--neu-bg);border:1px solid var(--card-border-solid);border-radius:8px;padding:5px 6px;cursor:pointer;max-width:88px}
+.cal-jump-year{max-width:74px}
+.cal-jump:hover{border-color:var(--primary)}
+.cal-nav-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
+.cal-nav-btn:hover{background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg))}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{font-size:10px;text-align:center;color:var(--text-muted);font-weight:700;text-transform:uppercase;padding:4px 0}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text);cursor:pointer;border-radius:8px;font-weight:500;border:1.5px solid transparent}
+.cal-day:hover:not(.disabled):not(.other){background:color-mix(in srgb, var(--primary) 10%, var(--panel-bg))}
+.cal-day.other{color:var(--text-muted);opacity:.4}
+.cal-day.today{border-color:var(--primary)}
+.cal-day.selected{background:var(--brand-grad);color:#fff;font-weight:700}
+.cal-day.focused{outline:2px solid var(--primary);outline-offset:1px}
+.cal-day.disabled{color:var(--text-muted);opacity:.35;cursor:not-allowed}
+.cal-foot{display:flex;justify-content:space-between;margin-top:10px;gap:8px}
+.cal-btn{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:10px;border:1px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer}
+.cal-btn.primary{background:var(--brand-grad);color:#fff;border-color:transparent}
+
+/* Profile banner + accordion */
+.profile-banner{background:linear-gradient(135deg,rgba(16,185,129,0.14),rgba(13,107,78,0.08));border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;display:flex;align-items:center;gap:18px;margin-bottom:20px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.10);flex-wrap:wrap}
+.pb-avatar{width:76px;height:76px;border-radius:50%;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.30);flex-shrink:0}
+.pb-info{flex:1;min-width:0}
+.pb-name{font-size:20px;font-weight:800;color:var(--text)}
+.pb-email{font-size:13px;color:var(--text-muted);margin-top:2px;word-break:break-all}
+.fact-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px 0}
+.fact-card{display:flex;align-items:flex-start;gap:10px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:12px 14px;min-width:0}
+.fact-card.full{grid-column:1 / -1}
+.fact-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.fact-meta{min-width:0}
+.fact-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.fact-value{font-size:14px;font-weight:600;color:var(--text);margin-top:2px;word-break:break-word}
+@media(max-width:520px){.fact-grid{grid-template-columns:1fr}}
+.profile-groups{display:flex;flex-direction:column;gap:16px}
+.profile-group{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);overflow:hidden}
+.pg-head{padding:16px 22px;display:flex;align-items:center;gap:10px;font-weight:700;color:var(--text);cursor:pointer;user-select:none}
+.pg-head i.pg-icon{color:var(--primary);font-size:18px}
+.pg-head .pg-chev{margin-left:auto;color:var(--text-muted);transition:transform 260ms ease}
+.profile-group.open .pg-chev{transform:rotate(180deg)}
+.pg-save-actions{position:sticky;bottom:0;background:var(--panel-bg);padding-top:14px;padding-bottom:18px;margin-top:6px;z-index:1}
+.pg-body{padding:0 22px;max-height:none;overflow:visible}
+@media(max-width:768px){
+  .pg-body{max-height:0;overflow:hidden;transition:max-height 320ms cubic-bezier(0.34,1.1,0.64,1);padding:0 22px}
+  .profile-group.open .pg-body{max-height:1200px;padding-bottom:20px}
+  .pg-head{padding:14px 18px}
+}
+@media(min-width:769px){
+  .pg-head{cursor:default}
+  .pg-head .pg-chev{display:none}
+  .pg-body{padding:0 22px 22px}
+}
+.profile-save-bar{position:sticky;bottom:0;background:var(--panel-bg);border-top:1px solid var(--card-border-solid);padding:14px 20px;display:none;justify-content:flex-end;margin:16px -16px -16px;border-radius:0 0 var(--radius-card) var(--radius-card)}
+@media(max-width:768px){
+  .profile-save-bar{display:flex;position:fixed;left:0;right:0;bottom:0;margin:0;z-index:80;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(var(--shadow-rgb),0.12)}
+  .desktop-save-actions{display:none}
+}
+
+/* FAB */
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;background:var(--brand-grad);color:#fff;border:none;display:none;align-items:center;justify-content:center;font-size:26px;cursor:pointer;box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.45);z-index:85;transition:transform 200ms ease}
+.fab:hover{transform:scale(1.05)}
+.fab.show{display:flex;animation:popIn 300ms cubic-bezier(0.34,1.5,0.64,1)}
+
+.wiz-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:13px}
+
+@media (max-width: 768px){
+  .topnav-strip-wrapper{display:none}
+  .hamburger{display:flex}
+  .form-grid{grid-template-columns:1fr}
+  .topbar-shell{margin:8px 10px 0;padding-inline:0;max-width:none}
+  .main{padding:clamp(16px,4vw,32px);padding-top:var(--main-top-offset,90px);padding-bottom:100px}
+  .page-title{font-size:20px}
+  .brand-name{font-size:13px}
+  .desktop-book-btn{display:none}
+}
+@media (min-width: 769px){
+  .fab{display:none !important}
+}
+@media (max-width: 480px){
+  .top-right .logout-btn span{display:none}
+}
+
+/* Refresh overlay shimmer */
+.refresh-host{position:relative}
+.refresh-host.refreshing::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,0.2),rgba(255,255,255,0.55),rgba(255,255,255,0.2));background-size:200% 100%;animation:refreshShimmer 1.4s linear infinite;pointer-events:none;z-index:5;border-radius:inherit}
+[data-theme="dark"] .refresh-host.refreshing::before{background:linear-gradient(90deg,rgba(255,255,255,0.04),rgba(255,255,255,0.12),rgba(255,255,255,0.04));background-size:200% 100%}
+.refresh-host.refreshing > *{opacity:.55;transition:opacity 200ms ease;pointer-events:none}
+@keyframes refreshShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Spin animation for refresh buttons */
+
+.drug-row{display:grid;grid-template-columns:1fr;gap:10px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:14px;margin-bottom:10px;position:relative}
+.drug-row .drug-row-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.drug-row .drug-row-head .drug-row-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.drug-row-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:640px){.drug-row-grid{grid-template-columns:1fr}}
+/* ==== Prescription numbered stepper / timeline ==== */
+.rx-stepper{position:relative;display:flex;flex-direction:column;gap:14px}
+.rx-stepper-count{font-size:12.5px;font-weight:600;color:var(--text-muted);letter-spacing:.02em}
+.rx-stepper-count strong{color:var(--text);font-weight:700}
+.rx-step{position:relative;display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:stretch;animation:rxStepIn 260ms ease both}
+@keyframes rxStepIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.rx-step-badge-col{position:relative;display:flex;flex-direction:column;align-items:center}
+.rx-step-badge{position:relative;z-index:2;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;background:var(--panel-bg);color:var(--text-muted);border:2px solid var(--card-border-solid);transition:all 240ms ease;flex-shrink:0}
+.rx-step-badge .rx-step-check{display:none;font-size:16px;line-height:1}
+.rx-step.is-complete .rx-step-badge{background:var(--brand-grad);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.25);transform:scale(1.04)}
+.rx-step.is-complete .rx-step-badge .rx-step-num{display:none}
+.rx-step.is-complete .rx-step-badge .rx-step-check{display:inline-block;animation:rxCheckIn 220ms ease both}
+@keyframes rxCheckIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+.rx-step-line{position:absolute;top:36px;bottom:-14px;left:50%;transform:translateX(-50%);width:2px;background:repeating-linear-gradient(to bottom,var(--card-border-solid) 0 4px,transparent 4px 8px);z-index:1;transition:background 240ms ease}
+.rx-step.is-complete .rx-step-line{background:repeating-linear-gradient(to bottom,color-mix(in srgb, var(--primary) 45%, transparent) 0 4px,transparent 4px 8px)}
+.rx-step:last-child .rx-step-line{display:none}
+.rx-step-card{background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:14px 14px 12px;box-shadow:0 2px 10px rgba(var(--shadow-rgb),0.05);position:relative;transition:box-shadow 220ms ease,border-color 220ms ease}
+.rx-step.is-complete .rx-step-card{border-color:color-mix(in srgb, var(--primary) 35%, var(--card-border-solid));box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.10)}
+.rx-step-card .drug-row-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.rx-step-card .drug-row-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.rx-add-step-btn{width:100%;padding:14px;border-radius:var(--radius-card);border:2px dashed var(--card-border-solid);background:transparent;color:var(--text-muted);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 200ms ease;margin-top:4px}
+.rx-add-step-btn:hover{border-color:var(--primary);color:var(--primary);background:color-mix(in srgb, var(--primary) 6%, transparent)}
+.rx-add-step-btn i{font-size:16px}
+@media(max-width:640px){
+  .rx-step{grid-template-columns:1fr;gap:0}
+  .rx-step-badge-col{position:absolute;top:10px;left:10px;height:auto;width:auto;z-index:3}
+  .rx-step-badge{width:28px;height:28px;font-size:12px;border-width:2px}
+  .rx-step-line{left:14px;top:38px;bottom:-14px;transform:none;width:2px}
+  .rx-step:last-child .rx-step-line{display:none}
+  .rx-step-card{padding:12px 12px 10px 48px}
+  .rx-step-card .drug-row-head{margin-bottom:6px}
+  .rx-step-card .drug-row-title{font-size:11px}
+  .rx-step-card .form-label{font-size:11.5px}
+  .rx-step-card .form-input,.rx-step-card .custom-select-trigger{min-height:44px}
+  .rx-add-step-btn{padding:12px;font-size:13px}
+}
+/* ==== Prescription history (grouped by appointment) ==== */
+.rx-hist-wrap{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.rx-hist-empty{padding:14px;border:1.5px dashed var(--card-border-solid);border-radius:var(--radius-input);color:var(--text-muted);font-size:13px;display:flex;align-items:center;gap:8px;justify-content:center}
+.rx-hist-card{border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);background:var(--panel-bg);overflow:hidden;transition:box-shadow 200ms ease}
+.rx-hist-card.open{box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.10)}
+.rx-hist-head{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;color:var(--text)}
+.rx-hist-head .rx-hist-ic{width:34px;height:34px;border-radius:10px;background:color-mix(in srgb, var(--primary) 12%, transparent);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rx-hist-head .rx-hist-meta{flex:1;min-width:0}
+.rx-hist-head .rx-hist-code{font-weight:700;font-size:13.5px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.rx-hist-head .rx-hist-sub{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.rx-hist-chev{transition:transform 220ms ease;color:var(--text-muted);flex-shrink:0}
+.rx-hist-card.open .rx-hist-chev{transform:rotate(180deg)}
+.rx-hist-body{max-height:0;overflow:hidden;transition:max-height 260ms ease,padding 260ms ease;padding:0 14px}
+.rx-hist-card.open .rx-hist-body{max-height:1200px;padding:0 14px 14px}
+.rx-hist-items{display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--card-border-solid);padding-top:10px}
+.rx-hist-item{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:8px 10px;border:1px solid var(--card-border-solid);border-radius:10px;background:var(--neu-bg);font-size:12.5px}
+.rx-hist-item .rx-hist-drug{font-weight:700;color:var(--text)}
+.rx-hist-item .rx-hist-qty{font-weight:600;color:var(--primary);font-size:12px;white-space:nowrap}
+.rx-hist-item .rx-hist-detail{grid-column:1 / -1;color:var(--text-muted);font-size:12px;line-height:1.5}
+@media(max-width:640px){.rx-hist-item{grid-template-columns:1fr}.rx-hist-item .rx-hist-qty{justify-self:start}}
+.dosage-inline{display:flex;gap:6px;align-items:center}
+.dosage-inline .form-input{flex:1}
+.dosage-inline .dosage-suffix{font-size:12px;color:var(--text-muted);font-weight:600;white-space:nowrap}
+
+/* ==== TASK 4: prevent long unbroken text from overflowing modal-msg ==== */
+.modal-msg{overflow-wrap:break-word;word-break:break-word}
+.modal-msg *{overflow-wrap:break-word;word-break:break-word}
+.modal-msg .advice-preview{white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word}
+
+/* ==== TASK 6: prevent .table-wrap from expanding its parent's width ==== */
+.table-wrap{min-width:0;max-width:100%;width:100%}
+.table-scroll{max-width:100%;min-width:0}
+
+/* ==== TASK 8: glassmorphic soft-fade scroll edges on scrollable modals ==== */
+/* Injected via JS as first/last child of every .modal-card. Sticky within
+   the modal's own scroll box so pseudo-elements aren't needed and it works
+   in both light and dark themes. */
+.modal-card{--msf-pad:24px}
+.msf-strip{position:sticky;left:0;right:0;display:block;height:36px;pointer-events:none;z-index:20;opacity:0;transition:opacity 200ms ease;margin-left:calc(var(--msf-pad) * -1);margin-right:calc(var(--msf-pad) * -1)}
+.msf-strip.msf-top{top:calc(var(--msf-pad) * -1);margin-bottom:calc(var(--msf-pad) * -1 - 12px);background:linear-gradient(to bottom, color-mix(in srgb, var(--panel-bg) 88%, transparent) 0%, color-mix(in srgb, var(--panel-bg) 60%, transparent) 55%, transparent 100%);-webkit-mask-image:linear-gradient(to bottom, #000 25%, transparent 100%);mask-image:linear-gradient(to bottom, #000 25%, transparent 100%);backdrop-filter:blur(12px) saturate(160%)}
+.msf-strip.msf-bot{bottom:calc(var(--msf-pad) * -1);margin-top:calc(var(--msf-pad) * -1 - 12px);background:linear-gradient(to top, color-mix(in srgb, var(--panel-bg) 88%, transparent) 0%, color-mix(in srgb, var(--panel-bg) 60%, transparent) 55%, transparent 100%);-webkit-mask-image:linear-gradient(to top, #000 25%, transparent 100%);mask-image:linear-gradient(to top, #000 25%, transparent 100%);backdrop-filter:blur(12px) saturate(160%)}
+.msf-strip.show{opacity:1}
+
+/* ==== TASK 1: patient search list (replaces old wide table) ==== */
+.pat-list{display:flex;flex-direction:column;gap:8px}
+.pat-list-item{display:flex;align-items:center;gap:12px;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:10px 14px;transition:all 160ms ease}
+.pat-list-item:hover{border-color:var(--primary);transform:translateY(-1px);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.10)}
+.pat-list-avatar{width:38px;height:38px;border-radius:50%;background:var(--brand-grad);color:#fff;font:800 13px 'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 10px rgba(var(--shadow-rgb),0.25)}
+.pat-list-name{flex:1;min-width:0;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.pat-list-item .btn-primary{flex-shrink:0}
+
+/* ==== TASK 2: patient profile modal ==== */
+.pp-head{display:flex;align-items:center;gap:14px;padding-bottom:14px;margin-bottom:6px;border-bottom:2px dashed var(--card-border-solid)}
+.pp-avatar{width:56px;height:56px;border-radius:50%;background:var(--brand-grad);color:#fff;font:800 20px 'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 16px rgba(var(--shadow-rgb),0.28)}
+.pp-head-meta{min-width:0;flex:1}
+.pp-head-name{font-size:17px;font-weight:800;color:var(--text);overflow-wrap:break-word}
+.pp-head-sub{font-size:12px;color:var(--text-muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:6px 12px}
+.pp-head-sub span{display:inline-flex;align-items:center;gap:4px}
+.pp-section{margin-top:18px}
+.pp-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.pp-section-title .pp-ro{font-weight:500;font-size:10.5px;color:var(--text-muted);opacity:.8;text-transform:none;letter-spacing:0}
+.pp-mr-card{background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:12px 16px}
+.pp-mr-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--card-border-solid);font-size:13px}
+.pp-mr-row:last-child{border-bottom:none}
+.pp-mr-row strong{color:var(--text-muted);font-weight:600;flex-shrink:0}
+.pp-mr-row span{color:var(--text);text-align:right;overflow-wrap:break-word;word-break:break-word;max-width:62%;white-space:pre-wrap}
+.pp-appt-list{display:flex;flex-direction:column;gap:6px}
+.pp-appt-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:12px;padding:11px 14px;font-size:13px;cursor:pointer;transition:all 160ms ease;text-align:left;width:100%;font-family:inherit;color:var(--text)}
+.pp-appt-item:hover{border-color:var(--primary);transform:translateY(-1px);box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.10)}
+.pp-appt-code{font-family:'Poppins',monospace;font-weight:700;font-style:italic;color:var(--primary);font-size:12.5px;letter-spacing:.04em}
+.pp-appt-date{color:var(--text-muted);font-weight:500;font-size:12.5px}
+.pp-appt-chev{color:var(--text-muted);flex-shrink:0}
+.pp-empty{padding:14px;text-align:center;color:var(--text-muted);font-size:12.5px;background:var(--neu-bg);border:1px dashed var(--card-border-solid);border-radius:12px}
+
+/* ==== TASK 7: consultation medical records mini-block ==== */
+.consult-mr-block{background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.consult-mr-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.consult-mr-title .pp-ro{font-weight:500;font-size:10.5px;color:var(--text-muted);opacity:.8;text-transform:none;letter-spacing:0}
+.consult-mr-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+@media(max-width:520px){.consult-mr-grid{grid-template-columns:1fr}}
+.consult-mr-item{font-size:12.5px;min-width:0}
+.consult-mr-item .k{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
+.consult-mr-item .v{color:var(--text);font-weight:500;overflow-wrap:break-word;word-break:break-word;white-space:pre-wrap}
+
+/* ===================== REDESIGN ADDITIONS ===================== */
+
+/* --- 6. Bordered read-only text-value standard --- */
+.text-block{border:1.5px solid var(--card-border-solid);border-radius:12px;background:var(--neu-bg);padding:10px 14px;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word;color:var(--text)}
+.text-block.muted{color:var(--text-muted)}
+.text-block-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.text-block-label i{color:var(--primary);font-size:14px}
+.pp-empty{border:1.5px solid var(--card-border-solid);background:var(--neu-bg)}
+.rx-hist-empty{border-style:solid}
+/* medical-record rows become individually bordered value boxes */
+.pp-mr-card{background:transparent;border:none;padding:0;display:flex;flex-direction:column;gap:8px}
+.pp-mr-row{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:9px 13px;border:1.5px solid var(--card-border-solid);border-bottom:1.5px solid var(--card-border-solid);border-radius:12px;background:var(--neu-bg);font-size:13px}
+.pp-mr-row:last-child{border-bottom:1.5px solid var(--card-border-solid)}
+.pp-mr-row strong{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
+.pp-mr-row span{color:var(--text);text-align:left;max-width:100%;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word}
+.consult-mr-item .v{border:1.5px solid var(--card-border-solid);border-radius:10px;background:var(--panel-bg);padding:6px 10px;margin-top:3px}
+
+/* --- 5. Bottom sheet modal system (mobile only) --- */
+@keyframes slideUp{from{transform:translateY(100%);opacity:.5}to{transform:translateY(0);opacity:1}}
+.sheet-handle{display:none;width:44px;height:5px;border-radius:10px;background:var(--card-border-solid);margin:-8px auto 12px}
+/* Sticky header: wraps the handle + title so it stays visible while the sheet body scrolls */
+.sheet-head-sticky{position:sticky;top:calc(-20px - env(safe-area-inset-top,0px));background:var(--panel-bg);z-index:26;margin:-20px -18px 12px;padding:14px 18px 10px}
+@media(max-width:768px){
+  /* Bottom-sheet treatment applies to EVERY modal-card on mobile (including
+     .wide ones that were not explicitly marked .sheet) so no modal can keep a
+     desktop max-width and overflow / offset inside the flex-centred backdrop. */
+  .modal-backdrop{padding:0;align-items:flex-end}
+  .modal-card:not(.no-sheet),
+  .modal-card.wide:not(.no-sheet),
+  .modal-card.sheet:not(.no-sheet){position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;max-width:none;border-radius:24px 24px 0 0;max-height:85vh;max-height:85svh;overflow-y:auto;overflow-x:hidden;animation:slideUp 320ms cubic-bezier(0.22,1,0.36,1);padding:20px 18px calc(16px + env(safe-area-inset-bottom,0px));border-bottom:none;--msf-pad:18px}
+  .modal-card:not(.no-sheet) .sheet-handle{display:block}
+  .modal-card:not(.no-sheet) .modal-actions{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));background:var(--panel-bg);margin-top:14px;padding:12px 0 calc(10px + env(safe-area-inset-bottom,0px));z-index:26;border-top:1px solid var(--card-border-solid)}
+  .modal-card:not(.no-sheet) .modal-actions .btn-primary{flex:1;justify-content:center}
+  .modal-card.sheet:not(.no-sheet) .sheet-handle{display:block}
+  .modal-card.sheet:not(.no-sheet) .sheet-head-sticky{display:block}
+  .modal-card.sheet:not(.no-sheet) .modal-actions{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));background:var(--panel-bg);margin-top:14px;padding:12px 0 calc(10px + env(safe-area-inset-bottom,0px));z-index:26;border-top:1px solid var(--card-border-solid)}
+  .modal-card.sheet:not(.no-sheet) .modal-actions .btn-primary{flex:1;justify-content:center}
+  /* Logout confirm must stay a small centered popup on mobile too — opt out of the global bottom-sheet rule above. */
+  .modal-card.no-sheet{position:fixed;left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:calc(100% - 32px);max-width:440px;border-radius:var(--radius-card);max-height:90vh;max-height:90svh;animation:popInCentered 280ms cubic-bezier(0.34,1.5,0.64,1);padding:24px}
+  .modal-card.no-sheet .sheet-handle{display:none}
+}
+@media(min-width:769px){
+  .sheet-head-sticky{position:static;background:none;margin:0;padding:0}
+}
+
+/* --- 3. Consultation modal: patient card + drug accordion --- */
+.consult-pat-card{display:flex;align-items:center;gap:12px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:16px;padding:12px 14px;margin-bottom:12px}
+.consult-pat-avatar{width:46px;height:46px;border-radius:50%;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px 'Poppins',sans-serif;flex-shrink:0;box-shadow:0 6px 16px rgba(var(--shadow-rgb),0.28)}
+.consult-pat-meta{min-width:0;flex:1}
+.consult-pat-name{font-size:16px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;overflow-wrap:break-word}
+.consult-pat-name i{color:var(--primary);font-size:17px}
+.consult-pat-role{font-size:11.5px;color:var(--text-muted);margin-top:1px}
+.consult-reason-wrap{margin-bottom:12px}
+
+.rx-step-card{overflow:visible}
+.rx-step-card .custom-select-wrap.open{z-index:600}
+.rx-step-card .custom-select-options{z-index:600}
+.drug-row-grid{position:relative}
+.rx-summary{display:none;align-items:center;gap:10px;cursor:pointer;padding:2px 0}
+.rx-step.collapsed .rx-summary{display:flex}
+.rx-step.collapsed .drug-row-grid{display:none}
+.rx-summary-text{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rx-summary > i.ph-pill{color:var(--primary);font-size:18px;flex-shrink:0}
+.rx-summary > i.rx-summary-chev{color:var(--text-muted);font-size:16px;flex-shrink:0}
+.rx-step.collapsed .rx-step-card{cursor:pointer}
+
+/* --- 4. Confirm submission modal --- */
+.confirm-pat-chip{display:inline-flex;align-items:center;gap:8px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+.confirm-pat-chip i{color:var(--primary);font-size:16px}
+.confirm-rx-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+
+/* --- 7. Patient lookup --- */
+.pat-search-box{position:relative;display:flex}
+.pat-search-box .form-input{padding-right:44px}
+.pat-search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:10px;border:none;background:rgba(148,163,184,0.18);color:var(--text-muted);display:none;align-items:center;justify-content:center;cursor:pointer;font-size:13px}
+.pat-search-clear.show{display:flex}
+.pat-search-clear:hover{background:rgba(148,163,184,0.32);color:var(--text)}
+.pat-list-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.pat-list-sub{font-size:11.5px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+.pat-list-sub span{display:inline-flex;align-items:center;gap:4px}
+.pat-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:2px 0 10px;display:flex;align-items:center;gap:6px}
+.pat-section-label i{color:var(--primary);font-size:14px}
+
+/* --- 10. Header rows keep filter + refresh on one line on mobile (Dashboard/Roster) --- */
+@media(max-width:768px){
+  .page-header-row{flex-wrap:nowrap;align-items:center;gap:10px}
+  .page-header-row > div:first-child{min-width:0;flex:1}
+  .page-header-row .page-title{font-size:18px}
+  .page-title-sub{font-size:11.5px;overflow:hidden;text-overflow:ellipsis}
+  .page-header-actions{flex-wrap:nowrap;flex-shrink:0;gap:6px}
+  .page-header-actions .custom-select-trigger{font-size:12px;padding-left:10px;padding-right:10px}
+  .page-header-actions .icon-btn{height:40px;width:40px}
+
+  /* Appointments: refresh icon stays inline next to the title (like My Prescriptions),
+     never wraps to its own line. */
+  #page-upcoming .page-header-row, #page-history .page-header-row{flex-wrap:nowrap;align-items:center}
+  #page-upcoming .page-header-actions, #page-history .page-header-actions{flex-basis:auto;flex-shrink:0;margin-top:0;align-items:center}
+}
+
+
+/* ===== PART 2: appointment accordion cards (built on .rx-hist-* language) ===== */
+.appt-ac-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.appt-ac .rx-hist-head{align-items:flex-start}
+.ac-avatar{width:38px;height:38px;border-radius:50%;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;box-shadow:0 3px 10px rgba(var(--shadow-rgb),0.22);letter-spacing:.02em}
+.ac-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:8px;background:color-mix(in srgb, var(--primary) 13%, transparent);color:var(--primary);border:1px solid color-mix(in srgb, var(--primary) 24%, transparent);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.ac-name{font-weight:700;font-size:13.5px;color:var(--text);overflow-wrap:break-word;word-break:break-word;min-width:0}
+.appt-ac .rx-hist-sub{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center}
+.appt-ac .rx-hist-sub span{display:inline-flex;align-items:center;gap:4px;min-width:0;flex-shrink:0;white-space:nowrap}
+.appt-ac .rx-hist-sub .badge{flex-shrink:0}
+.appt-ac .rx-hist-sub i{color:var(--primary);font-size:13px}
+.appt-ac .rx-hist-body{max-height:0}
+.appt-ac.open .rx-hist-body{max-height:2600px}
+.ac-body-inner{display:grid;grid-template-columns:1fr;gap:12px 16px;border-top:1px dashed var(--card-border-solid);padding-top:12px}
+@media(min-width:769px){ .ac-body-inner{grid-template-columns:1fr 1fr} }
+.ac-span-2{grid-column:1 / -1}
+.ac-v{font-size:13px;color:var(--text);overflow-wrap:break-word;word-break:break-word}
+.ac-hdr-grid{display:grid;grid-template-columns:1fr;gap:10px 16px;border-bottom:1px dashed var(--card-border-solid);padding-bottom:12px;margin-bottom:0}
+@media(min-width:769px){ .ac-hdr-grid{grid-template-columns:1fr 1fr} }
+.ac-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px}
+.ac-actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:2px}
+.ac-rx-empty{font-size:12.5px;color:var(--text-muted);border:1px dashed var(--card-border-solid);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px}
+/* ===== Roster cards (reuses .rx-hist-card visual language) ===== */
+.roster-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:4px}
+@media(min-width:720px){.roster-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
+.roster-card{border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);background:var(--panel-bg);padding:16px 18px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);transition:box-shadow 200ms ease,transform 200ms ease}
+.roster-card:hover{box-shadow:0 8px 22px rgba(var(--shadow-rgb),0.12);transform:translateY(-2px)}
+.roster-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.roster-date{font-weight:700;font-size:14px;color:var(--text);display:inline-flex;align-items:center;gap:7px}
+.roster-date i{color:var(--primary);font-size:16px}
+.roster-booked{font-size:12.5px;color:var(--text-muted);margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.roster-booked strong{color:var(--text);font-weight:700}
+.roster-bar{margin-top:7px;height:9px;border-radius:10px;background:var(--neu-bg);border:1px solid var(--card-border-solid);overflow:hidden}
+.roster-bar-fill{height:100%;border-radius:10px;transition:width 420ms cubic-bezier(0.34,1.1,0.64,1)}
+.roster-bar-fill.low{background:var(--success)}
+.roster-bar-fill.mid{background:var(--warning)}
+.roster-bar-fill.high{background:var(--error)}
+
+.filter-row{display:flex;justify-content:flex-end;margin-bottom:12px}
+.filter-row .custom-select-wrap{min-width:200px}
+@media(max-width:640px){.filter-row{justify-content:stretch}.filter-row .custom-select-wrap{width:100%;min-width:0}}
+
+/* ===== PART 2: drug bottom sheet ===== */
+.ds-search-wrap{position:relative;margin-bottom:10px}
+.ds-drug-list{max-height:280px;overflow-y:auto;border:1.5px solid var(--card-border-solid);border-radius:12px;background:var(--neu-bg);display:flex;flex-direction:column}
+.ds-drug-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:none;border-bottom:1px solid var(--card-border-solid);background:transparent;cursor:pointer;font-family:inherit;text-align:left;color:var(--text);width:100%}
+.ds-drug-row:last-child{border-bottom:none}
+.ds-drug-row:hover{background:color-mix(in srgb, var(--primary) 7%, transparent)}
+.ds-drug-row .ds-ic{width:32px;height:32px;border-radius:9px;background:color-mix(in srgb, var(--primary) 12%, transparent);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ds-drug-row .ds-meta{flex:1;min-width:0}
+.ds-drug-row .ds-name{font-weight:700;font-size:13px;overflow-wrap:break-word;word-break:break-word}
+.ds-drug-row .ds-sub{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.ds-drug-row .ds-price{font-size:12px;font-weight:700;color:var(--primary);white-space:nowrap}
+.ds-drug-row.oos{opacity:.5;cursor:not-allowed}
+.ds-drug-row.oos:hover{background:transparent}
+.ds-drug-row.oos .ds-sub{color:var(--error)}
+.ds-empty{padding:14px;font-size:12.5px;color:var(--text-muted);text-align:center}
+.ds-picked{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid color-mix(in srgb, var(--primary) 40%, var(--card-border-solid));border-radius:12px;background:color-mix(in srgb, var(--primary) 7%, transparent);margin-bottom:14px}
+.ds-picked .ds-meta{flex:1;min-width:0}
+.ds-fields{display:flex;flex-direction:column;gap:14px}
+.ds-dose-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-select-native{width:100%;min-height:46px;padding:10px 12px;border-radius:var(--radius-input);border:1.5px solid var(--input-border);background:var(--input-bg);color:var(--text);font-family:inherit;font-size:13.5px}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px}
+.pill-opt{padding:9px 14px;border-radius:var(--radius-btn);border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:all 160ms ease}
+.pill-opt:hover{border-color:var(--primary);color:var(--primary)}
+.pill-opt.selected{background:var(--brand-grad);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.22)}
+.rx-summary-del{flex-shrink:0;margin-left:4px}
+.rx-step.collapsed .rx-step-card{cursor:default}
+
+/* Button loading — mute button, three dots pulse in a traveling wave */
+.btn-primary.loading,.btn-secondary.loading{
+  background:var(--text-muted) !important;border-color:var(--text-muted) !important;
+  color:var(--panel-bg) !important;opacity:.6;pointer-events:none;
+}
+.btn-primary.loading .btn-icon,.btn-primary.loading .btn-text,
+.btn-secondary.loading .btn-icon,.btn-secondary.loading .btn-text{display:none}
+.btn-dots{display:none;align-items:center;justify-content:center;gap:6px}
+.btn-primary.loading .btn-dots,.btn-secondary.loading .btn-dots{display:inline-flex}
+.btn-dots span{
+  width:7px;height:7px;border-radius:50%;background:currentColor;
+  animation:dotPulse 1.2s ease-in-out infinite;
+}
+.btn-dots span:nth-child(1){animation-delay:0s}
+.btn-dots span:nth-child(2){animation-delay:.15s}
+.btn-dots span:nth-child(3){animation-delay:.3s}
+@keyframes dotPulse{
+  0%,80%,100%{transform:scale(1);opacity:.6}
+  40%{transform:scale(1.6);opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="med-bg" id="medBg"></div>
+
+<div id="authScreen">
+  <div class="auth-logo-pulse" aria-hidden="true"><img src="logo.png" alt="" /></div>
+  <div class="auth-ring-label">Verifying session…</div>
+</div>
+<script>
+/* Auth/loading screen now uses a pulsing brand logo (see .auth-logo-pulse CSS).
+   Kept as a no-op for compatibility with any code that calls this. */
+window.__stopAuthAnim = function(){}
+</script>
+
+<div class="layout" id="appLayout" style="display:none">
+  <div class="topbar-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon"><img src="logo.png" alt="Logo"/></div>
+        <div class="brand-name">ATBU MediCare</div>
+      </div>
+      <div class="top-right">
+        <button class="icon-btn" id="themeToggle" aria-label="Toggle theme"><i id="themeIcon" class="ph ph-moon"></i></button>
+        <button class="logout-btn desktop-logout-btn" id="logoutBtn"><i class="ph-bold ph-sign-out"></i><span>Log out</span></button>
+        <button class="icon-btn hamburger" id="menuBtn" aria-label="Open menu"><i class="ph ph-list"></i></button>
+      </div>
+    </header>
+  </div>
+
+  <div class="topnav-strip-wrapper" id="desktopNavWrapper">
+    <div class="topnav-strip-outer">
+      <nav class="topnav-strip" id="topnav"></nav>
+    </div>
+  </div>
+
+  <aside class="island-nav" id="islandNav" aria-label="Primary navigation">
+    <div class="island-profile" id="islandProfile" tabindex="0">
+      <div class="island-avatar" id="islandAvatar">D</div>
+      <div class="island-profile-meta island-label">
+        <div class="island-profile-name" id="islandName">—</div>
+        <span class="island-profile-badge">Doctor</span>
+      </div>
+    </div>
+    <div class="island-divider"></div>
+    <nav class="island-nav-list" id="islandNavList"></nav>
+    <div class="island-divider"></div>
+    <div class="island-footer" id="islandFooter" tabindex="0">
+      <div class="island-footer-glyph">G14</div>
+      <div class="island-footer-lines island-label">
+        <div>Group 14</div>
+        <div>Department of Cyber Security</div>
+        <div>ATBU MediCare</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head">
+      <div class="brand" style="gap:10px">
+        <div class="brand-icon" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#fff;overflow:hidden"><img src="logo.png" alt="ATBU MediCare logo" style="width:100%;height:100%;object-fit:contain"/></div>
+        <div class="brand-name" style="font:700 15px 'Poppins',sans-serif;color:var(--text)">ATBU MediCare</div>
+      </div>
+      <button class="icon-btn" id="drawerClose" aria-label="Close menu"><i class="ph ph-x"></i></button>
+    </div>
+    <nav class="drawer-nav" id="drawerNav"></nav>
+    <div class="drawer-foot">
+      <button class="logout-btn" style="width:100%;justify-content:center" id="logoutBtnDrawer"><i class="ph-bold ph-sign-out"></i> Log out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header-row">
+        <div>
+          <h1 class="page-title">Dashboard</h1>
+          <div class="page-title-sub" id="welcomeMsg">Welcome…</div>
+        </div>
+        <div class="page-header-actions">
+          <button class="icon-btn" id="refreshOverviewBtn" aria-label="Refresh"><i class="ph ph-arrows-clockwise"></i></button>
+        </div>
+      </div>
+      <div class="stat-grid" id="statGrid"></div>
+    </section>
+
+    <!-- ROSTER -->
+    <section class="page" id="page-roster">
+      <div class="page-header-row">
+        <div><h1 class="page-title">My Roster</h1><div class="page-title-sub">Upcoming shifts assigned by admin</div></div>
+        <div class="page-header-actions">
+          <button class="icon-btn" id="refreshRosterBtn" aria-label="Refresh"><i class="ph ph-arrows-clockwise"></i></button>
+        </div>
+      </div>
+      <div id="rosterList">Loading…</div>
+    </section>
+
+    <!-- APPOINTMENTS (Upcoming) -->
+    <section class="page" id="page-upcoming">
+      <div class="page-header-row">
+        <div><h1 class="page-title">Appointments</h1><div class="page-title-sub">Upcoming requests</div></div>
+        <div class="page-header-actions">
+          <button class="icon-btn" id="refreshUpcomingBtn" aria-label="Refresh"><i class="ph ph-arrows-clockwise"></i></button>
+        </div>
+      </div>
+      <div class="pill-row" id="apptStatusPills" style="margin-bottom:12px">
+        <button type="button" class="pill-opt" data-appt-status="pending">Pending</button>
+        <button type="button" class="pill-opt selected" data-appt-status="approved">Approved</button>
+      </div>
+      <div id="apptList" class="appt-ac-list">Loading…</div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="page" id="page-history">
+      <div class="page-header-row">
+        <div><h1 class="page-title">History</h1><div class="page-title-sub">Past visits</div></div>
+        <div class="page-header-actions">
+          <button class="icon-btn" id="refreshHistoryBtn" aria-label="Refresh"><i class="ph ph-arrows-clockwise"></i></button>
+        </div>
+      </div>
+      <div class="pill-row" id="historyStatusPills" style="margin-bottom:12px">
+        <button type="button" class="pill-opt selected" data-history-status="all">All statuses</button>
+        <button type="button" class="pill-opt" data-history-status="completed">Completed</button>
+        <button type="button" class="pill-opt" data-history-status="missed">Missed</button>
+        <button type="button" class="pill-opt" data-history-status="cancelled">Cancelled</button>
+      </div>
+      <div id="historyList" class="appt-ac-list">Loading…</div>
+    </section>
+
+    <!-- PATIENTS -->
+    <section class="page" id="page-patients">
+      <div class="page-header-row">
+        <div><h1 class="page-title">Patient Lookup</h1><div class="page-title-sub">Search patients and review continuity of care</div></div>
+      </div>
+      <div class="form-wrap">
+        <div class="form-field">
+          <label class="form-label"><i class="ph ph-magnifying-glass"></i> Search by name or email</label>
+          <div class="pat-search-box">
+            <input class="form-input" id="patientSearchInput" type="search" name="patient-query" placeholder="Start typing a name or email…" autocomplete="search-patient-x92j" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true">
+            <button type="button" class="pat-search-clear" id="patientSearchClear" aria-label="Clear search"><i class="ph-bold ph-x"></i></button>
+          </div>
+        </div>
+      </div>
+      <div id="patientSearchResultsWrap" style="margin-bottom:12px"><div id="patientSearchResults"></div></div>
+      <div id="patientHistory" style="margin-top:20px"></div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="page" id="page-profile">
+      <div class="page-header-row">
+        <div><h1 class="page-title">Profile</h1><div class="page-title-sub">Your account details and security settings</div></div>
+        <div class="page-header-actions">
+          <button class="icon-btn" id="profRefreshBtn" title="Refresh"><i class="ph ph-arrows-clockwise"></i></button>
+        </div>
+      </div>
+
+      <div class="profile-banner">
+        <div class="pb-avatar" id="profAvatar">?</div>
+        <div class="pb-info">
+          <div class="pb-name" id="profName">—</div>
+          <div class="pb-email" id="profEmail">—</div>
+        </div>
+      </div>
+
+      <div class="profile-groups">
+        <div class="profile-group open" id="profGroupInfo">
+          <div class="pg-head" data-pg-toggle="profGroupInfo"><i class="ph-fill ph-user pg-icon"></i> Profile <i class="ph ph-caret-down pg-chev"></i></div>
+          <div class="pg-body">
+            <div class="fact-grid">
+              <div class="fact-card"><div class="fact-icon"><i class="ph-fill ph-user"></i></div><div class="fact-meta"><div class="fact-label">Full Name</div><div class="fact-value" id="profFullName">—</div></div></div>
+              <div class="fact-card"><div class="fact-icon"><i class="ph-fill ph-identification-card"></i></div><div class="fact-meta"><div class="fact-label">Licence Number</div><div class="fact-value" id="profLicence">—</div></div></div>
+              <div class="fact-card"><div class="fact-icon"><i class="ph-fill ph-envelope-simple"></i></div><div class="fact-meta"><div class="fact-label">Email</div><div class="fact-value" id="profEmailRow">—</div></div></div>
+              <div class="fact-card"><div class="fact-icon"><i class="ph-fill ph-phone"></i></div><div class="fact-meta"><div class="fact-label">Phone</div><div class="fact-value" id="profPhone">—</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-group" id="profGroupSecurity">
+          <div class="pg-head" data-pg-toggle="profGroupSecurity"><i class="ph-fill ph-lock-key pg-icon"></i> Security <i class="ph ph-caret-down pg-chev"></i></div>
+          <div class="pg-body">
+            <div class="form-field" style="margin:16px 0 14px">
+              <label class="form-label">Current Password</label>
+              <input id="profCurPassword" class="form-input" type="password" placeholder="Enter current password" autocomplete="current-password"/>
+              <div class="field-error" id="profCurPasswordErr">Current password is required.</div>
+            </div>
+            <div class="form-field" style="margin-bottom:14px">
+              <label class="form-label">New Password</label>
+              <input id="profNewPassword" class="form-input" type="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+              <div class="field-error" id="profNewPasswordErr">Password must be at least 6 characters.</div>
+            </div>
+            <div class="form-field" style="margin-bottom:6px">
+              <label class="form-label">Confirm New Password</label>
+              <input id="profConfirmPassword" class="form-input" type="password" placeholder="Repeat new password" autocomplete="new-password"/>
+              <div class="field-error" id="profConfirmPasswordErr">Passwords do not match.</div>
+            </div>
+            <div class="pg-save-actions">
+              <button class="btn-primary btn" id="profChangePasswordBtn"><i class="btn-icon ph-fill ph-lock-key"></i><span class="btn-text">Change Password</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Change password modal (rendered only when required) -->
+<div class="modal-backdrop" id="changePasswordBackdrop" style="display:none">
+  <div class="modal-card">
+    <div class="modal-branded-head">
+      <div class="brand-icon"><img src="logo.png" alt="Logo"/></div>
+      <div><h3>Set a new password</h3><p>For security, please set a new password before continuing.</p></div>
+    </div>
+    <div class="form-field" style="margin-bottom:12px">
+      <label class="form-label">New password</label>
+      <input class="form-input" id="newPasswordInput" type="password" placeholder="At least 6 characters">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Confirm new password</label>
+      <input class="form-input" id="confirmPasswordInput" type="password" placeholder="Re-enter password">
+    </div>
+    <div class="field-error" id="changePasswordResult"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-primary" id="submitNewPasswordBtn"><i class="ph-bold ph-check"></i> Set new password</button>
+    </div>
+  </div>
+</div>
+
+<!-- Consultation modal -->
+<div class="modal-backdrop" id="consultBackdrop" style="display:none">
+  <div class="modal-card wide sheet">
+    <div class="sheet-head-sticky">
+    <div class="sheet-handle"></div>
+    <div class="modal-branded-head">
+      <div class="brand-icon"><img src="logo.png" alt="Logo"/></div>
+      <div><h3>Complete Consultation</h3><p id="consultApptInfo">Consultation &amp; prescription</p></div>
+    </div>
+    </div>
+    <div id="consultPatientCard"></div>
+    <!-- patient's medical record (read-only) so the doctor can reference while consulting -->
+    <div id="consultMedRecords" style="display:none"></div>
+    <div class="form-field" style="margin-bottom:12px">
+      <label class="form-label"><i class="ph ph-note-pencil" style="color:var(--primary)"></i> Advice to patient</label>
+      <textarea class="form-textarea" id="adviceInput" placeholder="What should the patient do?"></textarea>
+    </div>
+    <div class="form-field" style="margin-bottom:12px">
+      <label class="form-label"><i class="ph ph-file-text" style="color:var(--primary)"></i> Medical record <span style="font-weight:500;text-transform:none;font-size:11px">(internal — not shown to patient)</span></label>
+      <textarea class="form-textarea" id="medicalRecordInput" placeholder="Diagnosis, notes, observations"></textarea>
+    </div>
+    <div class="section-header" style="margin-top:6px">
+      <div class="section-title"><i class="ph ph-pill" style="color:var(--primary)"></i> Prescription</div>
+      <div class="rx-stepper-count" id="drugPickerCount">Prescription · <strong>0</strong> drug(s)</div>
+    </div>
+    <div id="drugPickerList" class="rx-stepper"></div>
+    <button type="button" class="rx-add-step-btn" id="addDrugRowBtn"><i class="ph-bold ph-plus-circle"></i> Add drug</button>
+    <div class="field-error" id="consultResult"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn-secondary" id="cancelConsultBtn">Cancel</button>
+      <button class="btn-primary" id="submitConsultBtn"><i class="ph-bold ph-paper-plane-tilt"></i> Submit consultation</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const SUPABASE_URL = 'https://qseuseqkzvnlqsartkoq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXVzZXFrenZubHFzYXJ0a29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjcwMTcsImV4cCI6MjA5OTIwMzAxN30.49UXm0BhbHy6oEAYRTJjddiRB3VsrVg-jkgmAa2fEH4'
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+let currentUser = null
+let drugStockCache = []
+let activeConsultApptId = null
+
+const NAV_ITEMS = [
+  { tab:'dashboard',  label:'Dashboard',  icon:'ph-house' },
+  { tab:'roster',     label:'My Roster',  icon:'ph-calendar-check' },
+  { tab:'upcoming',   label:'Appointments', icon:'ph-calendar-check' },
+  { tab:'history',    label:'History',    icon:'ph-clock-counter-clockwise' },
+  { tab:'patients',   label:'Patients',   icon:'ph-users-three' },
+  { tab:'profile',    label:'Profile',    icon:'ph-user-circle' },
+]
+
+/* ============ Helpers ============ */
+function escHtml(s){ if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function emptyIcon(){ return '<i class="ph ph-minus" style="color:var(--text-muted);opacity:.4"></i>' }
+function formatDate(d){ if(!d) return '—'; const dt=new Date(d); if(isNaN(dt)) return escHtml(d); return dt.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) }
+// PART 2: readable 12-hour time. Handles both bare time columns ("09:00:00")
+// and full timestamps ("2026-08-08T09:00:00+00:00"). Same null / invalid-date
+// fallback pattern as formatDate above.
+function formatTime(t){
+  if (t == null || t === '') return '—'
+  if (typeof t === 'string' && !t.includes('T')){
+    const m = t.match(/^(\d{1,2}):(\d{2})/)
+    if (m){
+      const d = new Date(); d.setHours(parseInt(m[1],10), parseInt(m[2],10), 0, 0)
+      return d.toLocaleString('en-US',{ hour:'numeric', minute:'2-digit', hour12:true })
+    }
+  }
+  const dt = new Date(t); if (isNaN(dt)) return escHtml(t)
+  return dt.toLocaleString('en-US',{ hour:'numeric', minute:'2-digit', hour12:true })
+}
+function formatDateTime(d){
+  if (!d) return '—'
+  const dt = new Date(d); if (isNaN(dt)) return escHtml(d)
+  return dt.toLocaleString('en-US',{ year:'numeric', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true })
+}
+function badge(status){ if(!status) return emptyIcon(); const s = String(status).toLowerCase(); return `<span class="badge ${escHtml(s)}">${escHtml(s.replace(/_/g,' '))}</span>` }
+function isNetworkError(err){ if(!err) return false; const m=(err.message||String(err)).toLowerCase(); return m.includes('failed to fetch')||m.includes('networkerror')||m.includes('load failed')||!navigator.onLine }
+function handleErr(err, fallback='Something went wrong'){ if(isNetworkError(err)){ showToast('error','Check your internet connection'); return } showToast('error', err?.message||fallback) }
+
+const TEXT_PREVIEW_STORE = {}
+let __textPreviewSeq = 0
+function eyeIconCell(text, title='Details'){
+  if (!text) return emptyIcon()
+  const key = 'tp' + (__textPreviewSeq++)
+  TEXT_PREVIEW_STORE[key] = { text: String(text), title }
+  return `<button type="button" class="icon-btn eye-btn" data-text-preview="${key}" aria-label="View ${escHtml(title)}"><i class="ph-bold ph-eye"></i></button>`
+}
+function wireEyeIconCells(container){
+  container.querySelectorAll('[data-text-preview]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const entry = TEXT_PREVIEW_STORE[btn.dataset.textPreview]
+      if (!entry) return
+      showInfoModal(entry.title, `<div style="white-space:pre-wrap;line-height:1.6">${escHtml(entry.text)}</div>`)
+    })
+  })
+}
+
+function buildTable(columns, rows, opts={}){
+  if (!rows || rows.length === 0) return `<div class="state-box"><i class="ph ph-tray"></i>${opts.emptyText||'No records yet.'}</div>`
+  const thead = '<thead><tr>' + columns.map(c => `<th>${escHtml(c.label)}</th>`).join('') + '</tr></thead>'
+  const tbody = '<tbody>' + rows.map(r => '<tr>' + columns.map(c => {
+    let v = c.render ? c.render(r) : (c.badge ? badge(r[c.key]) : escHtml(r[c.key]))
+    return `<td${c.cellClass?' class="'+c.cellClass+'"':''}>${v}</td>`
+  }).join('') + '</tr>').join('') + '</tbody>'
+  return `<table>${thead}${tbody}</table>`
+}
+function skTable(rows=5){
+  let h='<table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>'
+  for(let i=0;i<rows;i++) h+=`<tr><td><span class="sk sk-line" style="width:70px"></span></td><td><span class="sk sk-line" style="width:120px"></span></td><td><span class="sk sk-line" style="width:80px"></span></td><td><span class="sk sk-line" style="width:60px"></span></td></tr>`
+  h+='</tbody></table>'; return h
+}
+function skStatGrid(n=4){ let h=''; for(let i=0;i<n;i++) h+=`<div class="sk-stat"><div class="sk sk-circle"></div><div class="sk-meta"><span class="sk sk-line" style="width:60%"></span><span class="sk sk-line" style="width:40%;height:18px"></span></div></div>`; return h }
+
+/* ============ Button loading helper (dots animation) ============ */
+function setBtnLoading(btn, on){
+  if (!btn) return
+  if (on){
+    if (btn.dataset.loadingOrig === undefined) btn.dataset.loadingOrig = btn.innerHTML
+    btn.disabled = true
+    btn.classList.add('loading')
+    btn.innerHTML = `<span class="btn-icon" style="display:none"></span><span class="btn-text" style="display:none"></span><span class="btn-dots"><span></span><span></span><span></span></span>`
+  } else {
+    btn.disabled = false
+    btn.classList.remove('loading')
+    if (btn.dataset.loadingOrig !== undefined){ btn.innerHTML = btn.dataset.loadingOrig; delete btn.dataset.loadingOrig }
+  }
+}
+
+/* ============ TOAST (draggable up/left/right to dismiss) ============ */
+function showToast(type, message){
+  const duration = type === 'error' ? 6000 : 4000
+  const wrap = document.getElementById('toastContainer')
+  const t = document.createElement('div')
+  t.className = `toast t-${type}`
+  const icons = { success:'ph-check', error:'ph-x', info:'ph-info', warning:'ph-warning' }
+  const ic = icons[type] || icons.info
+  t.innerHTML = `<div class="toast-icon"><i class="ph-bold ${ic}"></i></div><div class="toast-text">${escHtml(message)}</div><button class="toast-close" aria-label="Close"><i class="ph ph-x"></i></button>`
+  wrap.appendChild(t)
+  requestAnimationFrame(() => t.classList.add('show'))
+  const dismiss = () => { t.classList.add('hide'); setTimeout(() => t.remove(), 300) }
+  t.querySelector('.toast-close').addEventListener('click', dismiss)
+  let autoTimer = setTimeout(dismiss, duration)
+  const THRESH = 80
+  let sx=0, sy=0, cx=0, cy=0, dragging=false
+  const start = (x,y) => { sx=x; sy=y; cx=0; cy=0; dragging=true; clearTimeout(autoTimer); t.classList.add('is-dragging'); t.style.transition='none' }
+  const move = (x,y) => { if(!dragging) return; cx=x-sx; cy=y-sy; const effY=Math.min(cy,0); const dist=Math.hypot(cx,effY); const op=Math.max(0,1-dist/(THRESH*1.5)); t.style.transform=`translate(${cx}px, ${cy}px)`; t.style.opacity=op }
+  const end = () => {
+    if(!dragging) return; dragging=false
+    const effY=Math.min(cy,0); const dist=Math.hypot(cx,effY)
+    if(dist>=THRESH){ t.style.transition='transform 250ms ease, opacity 200ms ease'; t.style.transform=`translate(${cx*2.5}px, ${cy*2.5}px)`; t.style.opacity='0'; setTimeout(()=>t.remove(),260) }
+    else { t.style.transition='transform 320ms cubic-bezier(0.34,1.56,0.64,1), opacity 200ms ease'; t.style.transform='translate(0,0)'; t.style.opacity='1'; t.classList.remove('is-dragging'); autoTimer=setTimeout(dismiss,3000) }
+  }
+  t.addEventListener('mousedown', e => { if(e.target.closest('.toast-close')) return; start(e.clientX,e.clientY); const mm=ev=>move(ev.clientX,ev.clientY); const mu=()=>{ end(); document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu) }; document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu) })
+  t.addEventListener('touchstart', e => { if(e.target.closest('.toast-close')) return; const tt=e.touches[0]; start(tt.clientX,tt.clientY) }, {passive:true})
+  t.addEventListener('touchmove', e => { const tt=e.touches[0]; move(tt.clientX,tt.clientY); e.preventDefault() }, {passive:false})
+  t.addEventListener('touchend', end); t.addEventListener('touchcancel', end)
+}
+
+/* ============ CONFIRM / INFO / PROMPT ============ */
+function showConfirm(title, message, confirmLabel='Confirm', extraClass=''){
+  return new Promise(resolve => {
+    const bd = document.createElement('div')
+    bd.className = 'modal-backdrop'
+    bd.innerHTML = `<div class="modal-card${extraClass ? ' ' + extraClass : ''}"><div class="modal-title">${escHtml(title)}</div><div class="modal-msg">${escHtml(message)}</div><div class="modal-actions"><button class="btn-secondary" data-act="cancel">Cancel</button><button class="btn-danger" data-act="ok" style="padding:10px 20px;font-size:13px">${escHtml(confirmLabel)}</button></div></div>`
+    document.body.appendChild(bd)
+    const close = v => { bd.remove(); resolve(v) }
+    bd.addEventListener('click', e => { if (e.target === bd) close(false) })
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false))
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => close(true))
+  })
+}
+function showInfoModal(title, htmlBody){
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.innerHTML = `<div class="modal-card sheet"><div class="sheet-head-sticky"><div class="sheet-handle"></div><div class="modal-title" style="margin-bottom:0">${escHtml(title)}</div></div><div class="modal-msg">${htmlBody}</div><div class="modal-actions"><button class="btn-primary" data-act="close">Close</button></div></div>`
+  document.body.appendChild(bd)
+  const close = () => bd.remove()
+  bd.addEventListener('click', e => { if (e.target === bd) close() })
+  bd.querySelectorAll('[data-act="close"]').forEach(b => b.addEventListener('click', close))
+}
+function showPrompt(title, message, placeholder=''){
+  return new Promise(resolve => {
+    const bd = document.createElement('div')
+    bd.className = 'modal-backdrop'
+    bd.innerHTML = `<div class="modal-card"><div class="modal-title">${escHtml(title)}</div><div class="modal-msg">${escHtml(message)}</div><div class="form-field" style="margin-bottom:14px"><textarea class="form-textarea" id="__promptInput" placeholder="${escHtml(placeholder)}"></textarea></div><div class="modal-actions"><button class="btn-secondary" data-act="cancel">Cancel</button><button class="btn-primary" data-act="ok">Submit</button></div></div>`
+    document.body.appendChild(bd)
+    const input = bd.querySelector('#__promptInput')
+    setTimeout(() => input.focus(), 50)
+    const close = v => { bd.remove(); resolve(v) }
+    bd.addEventListener('click', e => { if (e.target === bd) close(null) })
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => close(null))
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => close(input.value))
+  })
+}
+
+/* ============ THEME / DRAWER / NAV ============ */
+function applyThemeIcon(){ const t = document.documentElement.getAttribute('data-theme'); const ic = document.getElementById('themeIcon'); if (ic) ic.className = t === 'dark' ? 'ph ph-sun' : 'ph ph-moon' }
+function toggleTheme(){ const cur = document.documentElement.getAttribute('data-theme') || 'light'; const nxt = cur === 'light' ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', nxt); try { localStorage.setItem('atbu-theme', nxt) } catch(e){}; applyThemeIcon() }
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('drawerBackdrop').classList.add('open'); document.body.style.overflow='hidden' }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('drawerBackdrop').classList.remove('open'); document.body.style.overflow='' }
+function initMedBg(){
+  const bg=document.getElementById('medBg'); if(!bg||bg.dataset.done) return
+  const icons=['ph-pill','ph-first-aid-kit','ph-heartbeat','ph-syringe','ph-stethoscope','ph-thermometer','ph-drop','ph-cross']
+  for(let i=0;i<18;i++){
+    const el=document.createElement('i'); el.className='ph '+icons[i%icons.length]
+    el.style.left=(Math.random()*100)+'%'; el.style.fontSize=(18+Math.random()*18)+'px'
+    el.style.animationDuration=(14+Math.random()*20)+'s'; el.style.animationDelay=(-Math.random()*20)+'s'
+    bg.appendChild(el)
+  }
+  bg.dataset.done='1'
+}
+function renderNav(){
+  const top = document.getElementById('topnav'); const drw = document.getElementById('drawerNav')
+  const html = NAV_ITEMS.map((n,i) => `<button class="nav-item ${i===0?'active':''}" data-tab="${n.tab}" aria-label="${n.label}"><i class="ph ${n.icon}"></i> ${n.label}</button>`).join('')
+  top.innerHTML = html; drw.innerHTML = html
+  document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', () => switchTab(el.dataset.tab)))
+
+  const island = document.getElementById('islandNavList')
+  if (island){
+    island.innerHTML = NAV_ITEMS.map((n,i) => `<button type="button" class="island-nav-item ${i===0?'active':''}" data-tab="${n.tab}" aria-label="${n.label}" data-tooltip="${n.label}"><i class="ph ${n.icon}"></i><span class="island-label">${n.label}</span></button>`).join('')
+    island.querySelectorAll('.island-nav-item').forEach(el => el.addEventListener('click', () => switchTab(el.dataset.tab)))
+    // Tooltip disabled — labels are always visible in the expanded sidebar now.
+  }
+}
+
+function wireIslandTooltips(island){
+  return
+  let tip = document.getElementById('islandTooltip')
+  if (!tip){
+    tip = document.createElement('div')
+    tip.id = 'islandTooltip'
+    document.body.appendChild(tip)
+  }
+  const show = (el) => {
+    const label = el.dataset.tooltip
+    if (!label) return
+    const r = el.getBoundingClientRect()
+    tip.textContent = label
+    tip.style.left = (r.right + 12) + 'px'
+    tip.style.top = (r.top + r.height / 2) + 'px'
+    tip.classList.add('show')
+  }
+  const hide = () => tip.classList.remove('show')
+  island.querySelectorAll('.island-nav-item[data-tooltip]').forEach(el => {
+    el.addEventListener('mouseenter', () => show(el))
+    el.addEventListener('mouseleave', hide)
+    el.addEventListener('focus', () => show(el))
+    el.addEventListener('blur', hide)
+    el.addEventListener('click', hide)
+  })
+}
+
+function wireIslandTooltip(el, text){
+  const tip = document.getElementById('islandTooltip')
+  if (!tip) return
+  const show = () => {
+    tip.textContent = text
+    const r = el.getBoundingClientRect()
+    tip.style.left = (r.right + 10) + 'px'
+    tip.style.top = (r.top + r.height/2) + 'px'
+    tip.classList.add('show')
+  }
+  const hide = () => tip.classList.remove('show')
+  el.addEventListener('mouseenter', show)
+  el.addEventListener('focus', show)
+  el.addEventListener('mouseleave', hide)
+  el.addEventListener('blur', hide)
+  el.addEventListener('click', hide)
+}
+
+function initials(name){ if(!name) return '?'; return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase() }
+
+/* Island profile — avatar initials, and tooltip on profile/footer since their text is hidden (icon-only rail) */
+function setupIslandProfile(fullName){
+  const avatar = document.getElementById('islandAvatar')
+  if (avatar) avatar.textContent = initials(fullName)
+  const nameEl = document.getElementById('islandName')
+  if (nameEl) nameEl.textContent = fullName ? ('Dr. ' + fullName) : 'Doctor'
+  const profileEl = document.getElementById('islandProfile')
+  if (profileEl) wireIslandTooltip(profileEl, fullName ? ('Dr. ' + fullName) : 'Doctor')
+  const footerEl = document.getElementById('islandFooter')
+  if (footerEl) wireIslandTooltip(footerEl, 'Group 14 — Department of Cyber Security — ATBU MediCare')
+}
+function switchTab(tabName){
+  // TASK 3: highlight both mobile/drawer (.nav-item) and desktop island (.island-nav-item) nav elements
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tabName))
+  document.querySelectorAll('.island-nav-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tabName))
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-'+tabName))
+  closeDrawer()
+  window.scrollTo({ top:0, behavior:'smooth' })
+}
+/* =============== LAYOUT OFFSET =============== */
+/* Top offset — the island is a left sidebar (not stacked above content like the old
+   topnav-strip was), so on desktop the offset only needs to clear the topbar itself. */
+function updateMainTopOffset(){
+  const topbarShell = document.querySelector('.topbar-shell')
+  const isDesktop = window.innerWidth > 768
+  let offset
+  if (isDesktop){
+    offset = topbarShell ? topbarShell.getBoundingClientRect().bottom + 22 : 100
+  } else {
+    const navWrapper = document.getElementById('desktopNavWrapper')
+    offset = 0
+    if (topbarShell){ const r = topbarShell.getBoundingClientRect(); offset = Math.max(offset, r.bottom) }
+    if (navWrapper && getComputedStyle(navWrapper).display !== 'none'){ const r = navWrapper.getBoundingClientRect(); offset = Math.max(offset, r.bottom) }
+    offset += 16
+  }
+  document.documentElement.style.setProperty('--main-top-offset', `${Math.ceil(offset)}px`)
+}
+window.addEventListener('resize', updateMainTopOffset)
+async function refreshWithOverlay(containerId, loadFn, sectionLabel){
+  const host = document.getElementById(containerId); if(!host){ return loadFn() }
+  const hasContent = host.children.length > 0 && !host.querySelector('.sk')
+  if (hasContent) host.classList.add('refresh-host','refreshing')
+  try { await loadFn(); showToast('info', `${sectionLabel||'Data'} refreshed`) }
+  catch(e){ handleErr(e) }
+  finally { host.classList.remove('refreshing') }
+}
+
+/* ============ INIT / AUTH ============ */
+async function init(){
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session){ window.location.href = 'index.html'; return }
+  currentUser = session.user
+
+  const { data: roleRow, error: roleErr } = await supabase
+    .from('user_roles').select('role').eq('id', currentUser.id).single()
+  if (roleErr || !roleRow || roleRow.role !== 'doctor'){ window.location.href = 'index.html'; return }
+
+  const { data: doctor } = await supabase
+    .from('doctors').select('full_name, is_active, must_change_password').eq('id', currentUser.id).single()
+
+  if (doctor && doctor.is_active === false){
+    document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:Poppins,sans-serif"><h1 style="color:#EF4444">Account Deactivated</h1><p>Your account has been deactivated. Please contact the hospital admin for assistance.</p></div>'
+    await supabase.auth.signOut(); return
+  }
+
+  try { if (window.__stopAuthAnim) window.__stopAuthAnim() } catch(e){}
+  document.getElementById('authScreen').style.display = 'none'
+  document.getElementById('appLayout').style.display = ''
+  initMedBg(); renderNav(); applyThemeIcon(); updateMainTopOffset(); wireAppointmentsAndHistory()
+
+  if (doctor){
+    document.getElementById('welcomeMsg').textContent = 'Welcome, Dr. ' + doctor.full_name
+    setupIslandProfile(doctor.full_name)
+  }
+
+  if (doctor && doctor.must_change_password === true){
+    document.getElementById('changePasswordBackdrop').style.display = 'flex'
+    return
+  }
+  loadAll()
+}
+function loadAll(){ loadOverview(); loadRoster(); loadAppointments(); loadHistoryList(); loadDrugStock(); loadProfile() }
+
+document.getElementById('themeToggle').addEventListener('click', toggleTheme)
+document.getElementById('menuBtn').addEventListener('click', openDrawer)
+document.getElementById('drawerClose').addEventListener('click', closeDrawer)
+document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer)
+document.getElementById('logoutBtn').addEventListener('click', confirmLogout)
+document.getElementById('logoutBtnDrawer').addEventListener('click', confirmLogout)
+
+async function confirmLogout(){
+  const ok = await showConfirm('Log Out', "Are you sure you want to log out? You'll need to sign in again to access the dashboard.", 'Log Out', 'no-sheet')
+  if (ok){ await supabase.auth.signOut(); window.location.href = 'index.html' }
+}
+
+/* ============ CHANGE PASSWORD ============ */
+document.getElementById('submitNewPasswordBtn').addEventListener('click', async () => {
+  // TASK 6: disable button while password update is in flight
+  const __pwBtn = document.getElementById('submitNewPasswordBtn'); setBtnLoading(__pwBtn, true)
+  try {
+  const result = document.getElementById('changePasswordResult')
+  const newPass = document.getElementById('newPasswordInput').value
+  const confirmPass = document.getElementById('confirmPasswordInput').value
+  result.classList.add('show')
+  if (!newPass || newPass.length < 6){ result.textContent = 'Password must be at least 6 characters.'; return }
+  if (newPass !== confirmPass){ result.textContent = 'Passwords do not match.'; return }
+  result.textContent = 'Updating password…'
+  const { error: updateAuthErr } = await supabase.auth.updateUser({ password: newPass })
+  if (updateAuthErr){ result.textContent = 'Error: ' + updateAuthErr.message; return }
+  const { error: updateFlagErr } = await supabase.from('doctors').update({ must_change_password: false }).eq('id', currentUser.id)
+  if (updateFlagErr){ result.textContent = 'Password updated but failed to clear flag: ' + updateFlagErr.message; return }
+  showToast('success','Password updated. Loading dashboard…')
+  document.getElementById('changePasswordBackdrop').style.display = 'none'
+  loadAll()
+  } finally { setBtnLoading(__pwBtn, false) }
+})
+
+/* ============ DASHBOARD OVERVIEW ============ */
+async function loadOverview(){
+  const el = document.getElementById('statGrid')
+  if (!el.classList.contains('refreshing')) el.innerHTML = skStatGrid(4)
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  const [rosterRes, pendingRes, upcomingRes, historyRes] = await Promise.all([
+    supabase.from('doctor_slots').select('id',{count:'exact',head:true}).eq('doctor_id', currentUser.id).gte('date', todayStr),
+    supabase.from('appointments').select('id, doctor_slots!inner(doctor_id)',{count:'exact',head:true}).eq('doctor_slots.doctor_id', currentUser.id).eq('status','pending'),
+    supabase.from('appointments').select('id, doctor_slots!inner(doctor_id, date)',{count:'exact',head:true}).eq('doctor_slots.doctor_id', currentUser.id).eq('status','approved').gte('doctor_slots.date', todayStr),
+    supabase.from('appointments').select('id, doctor_slots!inner(doctor_id)',{count:'exact',head:true}).eq('doctor_slots.doctor_id', currentUser.id).in('status',['completed','missed','cancelled']),
+  ])
+  const cards = [
+    { label:'Upcoming Shifts', value: rosterRes.count ?? 0, icon:'ph-calendar-check', cls:'' },
+    { label:'Pending Requests', value: pendingRes.count ?? 0, icon:'ph-hourglass', cls:'amber' },
+    { label:'Upcoming Appointments', value: upcomingRes.count ?? 0, icon:'ph-clipboard-text', cls:'blue' },
+    { label:'History', value: historyRes.count ?? 0, icon:'ph-clock-counter-clockwise', cls:'' },
+  ]
+  el.innerHTML = cards.map(c => `<div class="stat-card"><div class="stat-icon ${c.cls}"><i class="ph ${c.icon}"></i></div><div class="stat-meta"><div class="stat-label">${c.label}</div><div class="stat-value">${c.value}</div></div></div>`).join('')
+}
+document.getElementById('refreshOverviewBtn').addEventListener('click', () => refreshWithOverlay('statGrid', loadOverview, 'Overview'))
+
+/* ============ ROSTER ============ */
+async function loadRoster(){
+  const el = document.getElementById('rosterList')
+  if (!el.classList.contains('refreshing')) el.innerHTML = `<div class="state-box"><i class="ph ph-spinner spin"></i> Loading…</div>`
+  const { data, error } = await supabase
+    .from('doctor_slots')
+    .select('id, date, shift, capacity, booked_count')
+    .eq('doctor_id', currentUser.id)
+    .gte('date', new Date().toISOString().split('T')[0])
+    .order('date',{ascending:true})
+  if (error){ el.innerHTML = `<div class="state-box"><i class="ph ph-warning-circle"></i>Error loading roster.</div>`; return }
+  const rows = data || []
+  if (!rows.length){ el.innerHTML = `<div class="state-box"><i class="ph ph-tray"></i>No upcoming shifts scheduled.</div>`; return }
+  el.innerHTML = `<div class="roster-grid">${rows.map(r => {
+    const cap = Number(r.capacity) || 0
+    const booked = Number(r.booked_count) || 0
+    const pctRaw = cap > 0 ? (booked / cap) * 100 : 0
+    const pct = Math.max(0, Math.min(100, pctRaw))
+    const cls = pct <= 50 ? 'low' : (pct < 90 ? 'mid' : 'high')
+    return `<div class="roster-card">
+      <div class="roster-card-top">
+        <div class="roster-date"><i class="ph ph-calendar-blank"></i>${escHtml(formatDate(r.date))}</div>
+        ${badge(r.shift)}
+      </div>
+      <div class="roster-booked"><span>Booked: <strong>${escHtml(booked)}</strong> / ${escHtml(cap)}</span><span>${Math.round(pct)}%</span></div>
+      <div class="roster-bar"><div class="roster-bar-fill ${cls}" style="width:${pct}%"></div></div>
+    </div>`
+  }).join('')}</div>`
+}
+document.getElementById('refreshRosterBtn').addEventListener('click', () => refreshWithOverlay('rosterList', loadRoster, 'Roster'))
+
+
+/* ============ PART 2: SHARED APPOINTMENT ACCORDION ============
+   One accordion implementation used by: #page-upcoming (Appointments), #page-history (History),
+   #page-history (Appointment History) and the Patient Lookup profile modal.
+   Visual language reused from .rx-hist-card / .rx-hist-head / .rx-hist-body /
+   .rx-hist-chev. Each card toggles ONLY its own .open class (no shared state,
+   no first-child-only CSS), so the "only the first one opens" bug cannot recur. */
+function apptStatusIcon(s){
+  return s==='completed'?'ph-check-circle':s==='cancelled'?'ph-x-circle':s==='missed'?'ph-warning':s==='approved'?'ph-calendar-check':'ph-hourglass'
+}
+function apptRxItemsHtml(rx){
+  const items = rx && rx.prescription_items ? rx.prescription_items : null
+  if (!items || !items.length){
+    return `<div class="ac-rx-empty"><i class="ph ph-tray"></i> No prescription for this visit</div>`
+  }
+  return `<div class="rx-hist-items" style="border-top:none;padding-top:0">${items.map(it => {
+    const ds = it.drug_stock || {}
+    const name = (ds.drug_name || 'Drug') + (ds.unit ? ` (${ds.unit})` : '')
+    return `<div class="rx-hist-item"><div class="rx-hist-drug">${escHtml(name)}</div><div class="rx-hist-qty">Qty ${escHtml(it.quantity)}</div><div class="rx-hist-detail">${escHtml(it.dosage || '—')} · ${escHtml(it.frequency || '—')} · ${escHtml(it.duration || '—')}</div></div>`
+  }).join('')}</div>`
+}
+function hdrField(label, iconClass, valueHtml){
+  return `<div><div class="text-block-label"><i class="ph ${iconClass}"></i> ${label}</div><div class="ac-v">${valueHtml}</div></div>`
+}
+function apptAccordionCardHtml(a, i, opts){
+  opts = opts || {}
+  const name = (a.patients && a.patients.full_name) || opts.patientName || 'Unknown'
+  const code = a.appointment_code || a.id
+  const date = formatDate((a.doctor_slots && a.doctor_slots.date) || a.created_at)
+  const time = formatTime(a.assigned_time)
+  const shift = a.doctor_slots && a.doctor_slots.shift
+  const notesLabel = a.status === 'cancelled' ? 'Cancellation note' : 'Advice to patient'
+  const notesVal = a.status === 'cancelled' ? a.cancellation_note : a.advice_to_patient
+  let actions = ''
+  if (opts.actions){
+    if (a.status === 'pending'){
+      actions = `<div class="ac-actions"><button class="btn-primary btn-sm" data-approve="${escHtml(a.id)}"><i class="ph-bold ph-check"></i> Approve</button><button class="btn-danger btn-sm" data-decline="${escHtml(a.id)}"><i class="ph-bold ph-x"></i> Decline</button></div>`
+    } else if (a.status === 'approved'){
+      actions = `<div class="ac-actions"><button class="btn-primary btn-sm" data-consult='${escHtml(JSON.stringify({id:a.id, name:name, reason:a.reason, patient_id:a.patients?a.patients.id:null}))}'><i class="ph-bold ph-stethoscope"></i> Consult</button></div>`
+    }
+  }
+  const rxBlock = opts.showRx ? `<div>
+        <div class="text-block-label"><i class="ph ph-pill"></i> Prescription for this visit</div>
+        ${apptRxItemsHtml(opts.rxMap ? opts.rxMap[a.id] : null)}
+      </div>` : ''
+  return `<div class="rx-hist-card appt-ac" data-ac-idx="${i}">
+    <button type="button" class="rx-hist-head" data-ac-toggle="${i}">
+      <div class="ac-avatar">${escHtml(initials(name))}</div>
+      <div class="rx-hist-meta">
+        <div class="rx-hist-code"><span class="ac-code">${escHtml(code)}</span> <span class="ac-name">${escHtml(name)}</span> ${badge(a.status)}</div>
+        <div class="rx-hist-sub"><span><i class="ph ph-calendar"></i> ${escHtml(date)}</span><span><i class="ph ph-clock"></i> ${escHtml(time)}</span>${shift ? `<span>${badge(shift)}</span>` : ''}</div>
+      </div>
+      <i class="ph ph-caret-down rx-hist-chev"></i>
+    </button>
+    <div class="rx-hist-body"><div class="ac-body-inner">
+      <div class="ac-hdr-grid ac-span-2">
+        ${hdrField('Patient', 'ph-user', escHtml(name))}
+        ${hdrField('Status', 'ph-seal-check', badge(a.status))}
+        ${hdrField('Appointment ID', 'ph-hash', escHtml(code))}
+        ${hdrField('Date', 'ph-calendar', escHtml(date))}
+        ${hdrField('Time', 'ph-clock', escHtml(time))}
+        ${hdrField('Shift', 'ph-clock-afternoon', shift ? badge(shift) : '—')}
+      </div>
+      <div class="ac-span-2">
+        <div class="text-block-label"><i class="ph ph-note"></i> Reason</div>
+        <div class="text-block${a.reason ? '' : ' muted'}">${escHtml(a.reason || '—')}</div>
+      </div>
+      ${notesVal ? `<div class="ac-span-2"><div class="text-block-label"><i class="ph ph-note-pencil"></i> ${escHtml(notesLabel)}</div><div class="text-block">${escHtml(notesVal)}</div></div>` : ''}
+      ${a.medical_record ? `<div class="ac-span-2"><div class="text-block-label"><i class="ph ph-file-text"></i> Medical record</div><div class="text-block">${escHtml(a.medical_record)}</div></div>` : ''}
+      ${rxBlock ? `<div class="ac-span-2">${rxBlock}</div>` : ''}
+      ${actions ? `<div class="ac-span-2">${actions}</div>` : ''}
+    </div></div>
+  </div>`
+}
+function renderApptAccordion(el, rows, opts){
+  opts = opts || {}
+  if (!el) return
+  if (!rows || !rows.length){
+    el.innerHTML = `<div class="state-box"><i class="ph ph-tray"></i>${escHtml(opts.emptyText || 'No appointments found.')}</div>`
+    return
+  }
+  el.innerHTML = `<div class="appt-ac-list">${rows.map((a,i) => apptAccordionCardHtml(a, i, opts)).join('')}</div>`
+  // Per-card independent toggle. Single-open-at-a-time is achieved by closing
+  // siblings explicitly here (never by CSS), so any card can open.
+  el.querySelectorAll('[data-ac-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.rx-hist-card')
+      if (!card) return
+      const wasOpen = card.classList.contains('open')
+      el.querySelectorAll('.rx-hist-card.open').forEach(c => { if (c !== card) c.classList.remove('open') })
+      card.classList.toggle('open', !wasOpen)
+    })
+  })
+  if (opts.actions){
+    el.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); approveAppointment(b.dataset.approve, b) }))
+    el.querySelectorAll('[data-decline]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); cancelAppointmentWithNote(b.dataset.decline, b) }))
+    el.querySelectorAll('[data-consult]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation()
+      try { openConsultForm(JSON.parse(b.dataset.consult)) } catch(err){}
+    }))
+  }
+}
+
+/* ============ APPOINTMENTS (unified: all statuses, sorted) ============ */
+const APPT_STATUS_PRIORITY = { pending:0, approved:1, completed:2, missed:3, cancelled:4 }
+let __apptStatus = 'approved'
+function __apptTimeKey(r){ return `${r.doctor_slots?.date || '9999-12-31'} ${r.assigned_time || '99:99'}` }
+async function loadAppointments(){
+  const el = document.getElementById('apptList')
+  if (!el) return
+  if (!el.classList.contains('refreshing')) el.innerHTML = `<div class="state-box"><i class="ph ph-spinner spin"></i> Loading…</div>`
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, appointment_code, assigned_time, reason, status, created_at, advice_to_patient, cancellation_note, medical_record, doctor_slots!inner ( doctor_id, date, shift ), patients ( id, full_name )')
+    .eq('doctor_slots.doctor_id', currentUser.id)
+  if (error){ el.innerHTML = `<div class="state-box"><i class="ph ph-warning-circle"></i>Error loading appointments.</div>`; return }
+  let rows = (data || []).filter(r => r.status === __apptStatus)
+  rows = rows.slice().sort((a,b) => __apptTimeKey(a).localeCompare(__apptTimeKey(b)))
+  renderApptAccordion(el, rows, { actions:true, emptyText: __apptStatus === 'pending' ? 'No pending appointments.' : 'No approved appointments.' })
+}
+document.getElementById('refreshUpcomingBtn').addEventListener('click', () => {
+  refreshWithOverlay('apptList', loadAppointments, 'Appointments')
+})
+document.getElementById('refreshHistoryBtn').addEventListener('click', () => {
+  refreshWithOverlay('historyList', loadHistoryList, 'History')
+})
+
+async function approveAppointment(apptId, btn){
+  const ok = await showConfirm('Approve appointment', 'Approve this appointment? The patient will be notified.', 'Approve')
+  if (!ok) return
+  // TASK 6: disable button during in-flight approve
+  if (btn) setBtnLoading(btn, true)
+  try {
+    const { error } = await supabase.from('appointments').update({ status:'approved' }).eq('id', apptId)
+    if (error){ handleErr(error,'Approve failed'); return }
+    showToast('success','Appointment approved')
+    loadAppointments(); loadOverview()
+  } finally {
+    if (btn) setBtnLoading(btn, false)
+  }
+}
+async function cancelAppointmentWithNote(apptId, btn){
+  const note = await showPrompt('Cancel appointment', 'Enter a reason for cancelling this appointment. The patient will see this note.', 'e.g. Doctor unavailable, please rebook.')
+  if (note === null) return
+  if (!note.trim()){ showToast('warning','A cancellation note is required.'); return }
+  // TASK 6: disable button during in-flight cancel
+  if (btn) setBtnLoading(btn, true)
+  try {
+    const { error } = await supabase.from('appointments').update({ status:'cancelled', cancellation_note: note.trim() }).eq('id', apptId)
+    if (error){ handleErr(error,'Cancel failed'); return }
+    showToast('success','Appointment cancelled')
+    loadAppointments(); loadHistoryList(); loadOverview()
+  } finally {
+    if (btn) setBtnLoading(btn, false)
+  }
+}
+
+/* ============ DRUG STOCK ============ */
+async function loadDrugStock(){
+  const { data, error } = await supabase.from('drug_stock').select('id, drug_name, unit, quantity, price').order('drug_name',{ascending:true})
+  if (!error && data) drugStockCache = data
+}
+
+// PART 2 (item 2f): DRUG_FORM_OPTIONS removed — prescription_items has no `form` column.
+const DOSAGE_UNIT_OPTIONS = ['mg','ml','g','tablet(s)','capsule(s)','drop(s)','IU','%']
+const FREQUENCY_OPTIONS = ['Once daily','Twice daily','Three times daily','Every 6 hours','Every 8 hours','Every 12 hours','As needed']
+const DURATION_OPTIONS = ['3 days','5 days','7 days','10 days','14 days','1 month']
+
+// Native <select> builder. Replaces the old custom div-based dropdown
+// (buildNativeSelect) and the pill-button picker (buildPillPicker) — a real
+// <select> gives correct keyboard/screen-reader support and removes any
+// "looks selected but isn't" ambiguity for free.
+function buildSelect(options, placeholderText, cls='form-select'){
+  const sel = document.createElement('select')
+  sel.className = cls
+  const ph = document.createElement('option')
+  ph.value = ''
+  ph.textContent = placeholderText || 'Select…'
+  ph.disabled = true
+  ph.selected = true
+  sel.appendChild(ph)
+  options.forEach(o => {
+    const opt = document.createElement('option')
+    opt.value = o
+    opt.textContent = o
+    sel.appendChild(opt)
+  })
+  return sel
+}
+
+/* ============ PART 2: DRUG ENTRY BOTTOM SHEET ============
+   "Add drug" no longer appends an inline stepper row. It opens a dedicated
+   bottom sheet (.modal-card.sheet / .sheet-handle / .sheet-head-sticky — the
+   same pattern used by openAppointmentDetailModal). On save the sheet closes
+   and the drug appears on the prescription screen as a collapsed .rx-summary
+   card inside the existing numbered .rx-step stepper. */
+
+function drugOptionLabel(drug){
+  return drug.quantity <= 0
+    ? `${drug.drug_name} (${drug.unit}) — Out of stock`
+    : `${drug.drug_name} (${drug.unit}) — stock: ${drug.quantity} — ₦${drug.price}`
+}
+
+// Collapsed one-line summary card shown on the prescription screen.
+// Exposes the same API the submit handler already uses (_drugSelect.value,
+// _qtyInput.value, getDosageValue/getFrequencyValue/getDurationValue).
+function buildDrugSummaryRow(data){
+  const row = document.createElement('div')
+  row.className = 'rx-step is-complete collapsed'
+  row.innerHTML = `<div class="rx-step-badge-col"><div class="rx-step-badge"><span class="rx-step-num">1</span><i class="ph-bold ph-check rx-step-check"></i></div><div class="rx-step-line"></div></div><div class="rx-step-card"><div class="rx-summary"><i class="ph-fill ph-pill"></i><span class="rx-summary-text"></span><i class="ph ph-pencil-simple rx-summary-chev" data-edit title="Edit"></i><button type="button" class="btn-danger btn-sm rx-summary-del" data-remove><i class="ph-bold ph-trash"></i></button></div></div>`
+  row._rxData = data
+  row.paint = () => {
+    const info = drugStockCache.find(x => String(x.id) === String(row._rxData.drug_id))
+    const name = info ? `${info.drug_name} (${info.unit})` : 'Drug item'
+    const parts = [name, row._rxData.dosage, row._rxData.frequency, row._rxData.duration, `x${row._rxData.quantity}`].filter(Boolean)
+    const el = row.querySelector('.rx-summary-text')
+    if (el) el.textContent = parts.join(' — ')
+  }
+  row.paint()
+  row.querySelector('[data-remove]').addEventListener('click', e => { e.stopPropagation(); row.remove(); renumberDrugSteps() })
+  row.querySelector('.rx-summary').addEventListener('click', e => {
+    if (e.target.closest('[data-remove]')) return
+    e.stopPropagation()
+    openDrugSheet(row)
+  })
+  row._drugSelect = { get value(){ return row._rxData.drug_id } }
+  row._qtyInput   = { get value(){ return row._rxData.quantity } }
+  row.getDosageValue    = () => row._rxData.dosage || null
+  row.getFrequencyValue = () => row._rxData.frequency || null
+  row.getDurationValue  = () => row._rxData.duration || null
+  return row
+}
+
+function openDrugSheet(editRow){
+  const existing = editRow ? editRow._rxData : null
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.style.zIndex = '10001'
+  bd.innerHTML = `<div class="modal-card sheet">
+    <div class="sheet-head-sticky"><div class="sheet-handle"></div><div class="modal-title" style="margin-bottom:0"><i class="ph-fill ph-pill" style="color:var(--primary)"></i> ${existing ? 'Edit drug' : 'Add drug'}</div></div>
+    <div class="modal-msg" id="dsBody" style="text-align:left"></div>
+    <div class="modal-actions"><button class="btn-secondary" data-act="cancel">Cancel</button><button class="btn-primary" id="dsSave" disabled><i class="ph-bold ph-check"></i> ${existing ? 'Save changes' : 'Add to prescription'}</button></div>
+  </div>`
+  document.body.appendChild(bd)
+  const close = () => bd.remove()
+  bd.addEventListener('click', e => { if (e.target === bd) close() })
+  bd.querySelectorAll('[data-act="cancel"]').forEach(b => b.addEventListener('click', close))
+
+  const body = bd.querySelector('#dsBody')
+  const saveBtn = bd.querySelector('#dsSave')
+
+  // --- drug picker: native <select> ---
+  const drugField = document.createElement('div'); drugField.className = 'form-field'
+  drugField.innerHTML = `<label class="form-label"><i class="ph ph-magnifying-glass"></i> Drug</label>`
+  const drugSelect = buildSelect([], 'Select a drug…')
+  // populate with rich labels; out-of-stock drugs are shown but disabled
+  drugStockCache.forEach(d => {
+    const opt = document.createElement('option')
+    opt.value = d.id
+    opt.textContent = drugOptionLabel(d)
+    if (d.quantity <= 0) opt.disabled = true
+    drugSelect.appendChild(opt)
+  })
+  drugField.appendChild(drugSelect)
+
+  // --- fields area ---
+  const fields = document.createElement('div'); fields.className = 'ds-fields'
+
+  const doseField = document.createElement('div'); doseField.className = 'form-field'
+  doseField.innerHTML = `<label class="form-label"><i class="ph ph-eyedropper"></i> Dosage</label>`
+  const doseGrid = document.createElement('div'); doseGrid.className = 'ds-dose-grid'
+  const doseNum = document.createElement('input')
+  doseNum.className = 'form-input'; doseNum.type = 'number'; doseNum.min = '0'; doseNum.step = 'any'; doseNum.placeholder = 'Amount e.g. 500'
+  const doseUnit = buildSelect(DOSAGE_UNIT_OPTIONS, 'Unit…')
+  doseGrid.appendChild(doseNum); doseGrid.appendChild(doseUnit)
+  doseField.appendChild(doseGrid)
+
+  const freqField = document.createElement('div'); freqField.className = 'form-field'
+  freqField.innerHTML = `<label class="form-label"><i class="ph ph-repeat"></i> Frequency</label>`
+  const freqSelect = buildSelect(FREQUENCY_OPTIONS, 'Select frequency…')
+  freqField.appendChild(freqSelect)
+
+  const durField = document.createElement('div'); durField.className = 'form-field'
+  durField.innerHTML = `<label class="form-label"><i class="ph ph-calendar-blank"></i> Duration</label>`
+  const durSelect = buildSelect(DURATION_OPTIONS, 'Select duration…')
+  durField.appendChild(durSelect)
+
+  const qtyField = document.createElement('div'); qtyField.className = 'form-field'
+  qtyField.innerHTML = `<label class="form-label"><i class="ph ph-stack"></i> Quantity</label>`
+  const qtyInput = document.createElement('input')
+  qtyInput.className = 'form-input'; qtyInput.type = 'number'; qtyInput.min = '1'; qtyInput.placeholder = 'Quantity to dispense'
+  qtyField.appendChild(qtyInput)
+
+  fields.appendChild(doseField); fields.appendChild(freqField); fields.appendChild(durField); fields.appendChild(qtyField)
+
+  body.appendChild(drugField); body.appendChild(fields)
+
+  function dosageValue(){
+    const n = doseNum.value.trim()
+    const u = doseUnit.value
+    if (!n || !u) return null
+    return `${n} ${u}`   // prescription_items.dosage is a plain text column
+  }
+  function validate(){
+    const ok = !!drugSelect.value && !!dosageValue() && !!freqSelect.value && !!durSelect.value && parseInt(qtyInput.value, 10) > 0
+    saveBtn.disabled = !ok
+  }
+  ;[doseNum, qtyInput].forEach(el => el.addEventListener('input', validate))
+  ;[drugSelect, doseUnit, freqSelect, durSelect].forEach(el => el.addEventListener('change', validate))
+
+  if (existing){
+    drugSelect.value = existing.drug_id
+    const m = String(existing.dosage || '').match(/^\s*([\d.]+)\s*(.*)$/)
+    if (m){ doseNum.value = m[1]; if (DOSAGE_UNIT_OPTIONS.indexOf(m[2].trim()) !== -1) doseUnit.value = m[2].trim() }
+    if (FREQUENCY_OPTIONS.indexOf(existing.frequency) !== -1) freqSelect.value = existing.frequency
+    if (DURATION_OPTIONS.indexOf(existing.duration) !== -1) durSelect.value = existing.duration
+    qtyInput.value = existing.quantity
+  }
+  validate()
+
+  saveBtn.addEventListener('click', () => {
+    const pickedId = drugSelect.value
+    const info = drugStockCache.find(d => String(d.id) === String(pickedId))
+    const qty = parseInt(qtyInput.value, 10)
+    if (!info || info.quantity <= 0){ showToast('error','Selected drug is out of stock.'); return }
+    if (qty > info.quantity){ showToast('warning', `Quantity exceeds available stock (only ${info.quantity} left).`); return }
+    const data = { drug_id: pickedId, dosage: dosageValue(), frequency: freqSelect.value, duration: durSelect.value, quantity: qty }
+    if (editRow){
+      editRow._rxData = data
+      editRow.paint()
+    } else {
+      const list = document.getElementById('drugPickerList')
+      list.appendChild(buildDrugSummaryRow(data))
+    }
+    renumberDrugSteps()
+    close()
+  })
+}
+
+document.getElementById('addDrugRowBtn').addEventListener('click', () => openDrugSheet(null))
+function renumberDrugSteps(){
+  const list = document.getElementById('drugPickerList')
+  if (!list) return
+  const steps = Array.from(list.children)
+  steps.forEach((st,i) => { const n = st.querySelector('.rx-step-num'); if (n) n.textContent = String(i+1) })
+  const cnt = document.getElementById('drugPickerCount')
+  if (cnt) cnt.innerHTML = `Prescription · <strong>${steps.length}</strong> drug(s)`
+}
+
+/* ============ CONSULTATION FORM ============ */
+let __consultPatientName = ''
+function openConsultForm(appt){
+  activeConsultApptId = appt.id
+  __consultPatientName = appt.name || 'Unknown'
+  const info = document.getElementById('consultApptInfo')
+  if (info) info.textContent = 'Consultation & prescription'
+  const card = document.getElementById('consultPatientCard')
+  if (card){
+    card.innerHTML = `
+      <div class="consult-pat-card">
+        <div class="consult-pat-avatar">${escHtml(initials(appt.name))}</div>
+        <div class="consult-pat-meta">
+          <div class="consult-pat-name"><i class="ph-fill ph-user"></i> ${escHtml(appt.name || 'Unknown')}</div>
+          <div class="consult-pat-role">Patient</div>
+        </div>
+      </div>
+      <div class="consult-reason-wrap">
+        <div class="text-block-label"><i class="ph ph-note"></i> Reason for visit</div>
+        <div class="text-block${appt.reason ? '' : ' muted'}">${escHtml(appt.reason || 'No reason provided.')}</div>
+      </div>`
+  }
+  document.getElementById('adviceInput').value = ''
+  document.getElementById('medicalRecordInput').value = ''
+  document.getElementById('consultResult').classList.remove('show')
+  document.getElementById('consultResult').textContent = ''
+  const list = document.getElementById('drugPickerList'); list.innerHTML = ''; renumberDrugSteps()
+  document.getElementById('consultBackdrop').style.display = 'flex'
+  // show the patient's medical record while consulting
+  loadConsultMedicalRecord(appt.patient_id)
+}
+async function loadConsultMedicalRecord(patientId){
+  const host = document.getElementById('consultMedRecords')
+  if (!host) return
+  host.style.display = 'none'; host.innerHTML = ''
+  if (!patientId) return
+  try {
+    const { data: mr, error: mrErr } = await supabase
+      .from('patient_medical_records')
+      .select('genotype, blood_group, allergies, chronic_conditions, emergency_contact_name, emergency_contact_number')
+      .eq('patient_id', patientId)
+      .maybeSingle()
+    if (mrErr && mrErr.code !== 'PGRST116'){
+      if (mrErr.code === '42501'){ host.style.display=''; host.innerHTML = `<div class="consult-mr-block"><div class="consult-mr-title"><i class="ph-fill ph-heartbeat" style="color:var(--primary)"></i> Medical Record</div><div class="text-block muted"><i class="ph ph-lock"></i> You don't have permission to view this patient's medical record.</div></div>`; return }
+      host.style.display=''; host.innerHTML = `<div class="consult-mr-block"><div class="consult-mr-title"><i class="ph-fill ph-heartbeat" style="color:var(--primary)"></i> Medical Record</div><div class="text-block muted"><i class="ph ph-warning-circle"></i> Could not load medical record.</div></div>`; return
+    }
+    host.style.display=''
+    if (!mr){
+      host.innerHTML = `<div class="consult-mr-block"><div class="consult-mr-title"><i class="ph-fill ph-heartbeat" style="color:var(--primary)"></i> Medical Record <span class="pp-ro">(read-only)</span></div><div class="text-block muted"><i class="ph-fill ph-heartbeat"></i> This patient has not filled in their medical record yet.</div></div>`
+      return
+    }
+    const cell = (k, v) => `<div class="consult-mr-item"><div class="k">${k}</div><div class="v">${escHtml(v || '—')}</div></div>`
+    host.innerHTML = `<div class="consult-mr-block">
+      <div class="consult-mr-title"><i class="ph-fill ph-heartbeat" style="color:var(--primary)"></i> Medical Record <span class="pp-ro">(read-only)</span></div>
+      <div class="consult-mr-grid">
+        ${cell('Genotype', mr.genotype)}
+        ${cell('Blood Group', mr.blood_group)}
+        ${cell('Allergies', mr.allergies)}
+        ${cell('Chronic Conditions', mr.chronic_conditions)}
+        ${cell('Emergency Contact', mr.emergency_contact_name)}
+        ${cell('Emergency Phone', mr.emergency_contact_number)}
+      </div>
+    </div>`
+  } catch(e){ console.warn('loadConsultMedicalRecord', e) }
+}
+function closeConsultModal(){
+  activeConsultApptId = null
+  document.getElementById('consultBackdrop').style.display = 'none'
+}
+document.getElementById('cancelConsultBtn').addEventListener('click', closeConsultModal)
+document.getElementById('submitConsultBtn').addEventListener('click', async () => {
+  // TASK 6: disable submit while in-flight to prevent duplicate submits
+  const __submitBtn = document.getElementById('submitConsultBtn')
+  setBtnLoading(__submitBtn, true)
+  const __reenable = () => setBtnLoading(__submitBtn, false)
+  try {
+  const resultEl = document.getElementById('consultResult'); resultEl.classList.add('show')
+  const setErr = m => { resultEl.textContent = m; showToast('error', m); __reenable() }
+
+  if (!activeConsultApptId){ setErr('No appointment selected.'); return }
+  const advice = document.getElementById('adviceInput').value.trim()
+  const medicalRecord = document.getElementById('medicalRecordInput').value.trim()
+  if (!advice){ setErr('Please enter advice to patient.'); return }
+
+  const rows = Array.from(document.getElementById('drugPickerList').children)
+  const items = []
+  for (const row of rows){
+    const drugId = row._drugSelect.value
+    if (!drugId) continue
+    const dosage = row.getDosageValue(); if (!dosage){ setErr('Please enter a valid dosage for every drug row.'); return }
+    const frequency = row.getFrequencyValue(); if (!frequency){ setErr('Please select a frequency for every drug row.'); return }
+    const duration = row.getDurationValue(); if (!duration){ setErr('Please select a duration for every drug row.'); return }
+    const qty = parseInt(row._qtyInput.value, 10); if (!qty || qty <= 0){ setErr('Please enter a valid quantity for every drug row.'); return }
+    const drugInfo = drugStockCache.find(d => d.id === drugId)
+    if (!drugInfo || drugInfo.quantity <= 0){ setErr(`${drugInfo ? drugInfo.drug_name : 'Selected drug'} is out of stock and cannot be prescribed.`); return }
+    if (qty > drugInfo.quantity){ setErr(`Quantity for ${drugInfo.drug_name} exceeds available stock (only ${drugInfo.quantity} left).`); return }
+    items.push({ drug_id: drugId, dosage, frequency, duration, quantity: qty, price_at_time: drugInfo ? drugInfo.price : 0 })
+  }
+  if (items.length === 0){ setErr('Please add at least one drug to the prescription.'); return }
+
+
+  // show a summary confirmation sheet before actually submitting
+  const patientNameForConfirm = __consultPatientName || 'the patient'
+  const drugRows = items.map(it => {
+    const info = drugStockCache.find(d => d.id === it.drug_id)
+    const name = info ? `${info.drug_name} (${info.unit})` : it.drug_id
+    return `<div class="rx-hist-item">
+      <div class="rx-hist-drug">${escHtml(name)}</div>
+      <div class="rx-hist-qty">Qty ${escHtml(it.quantity)}</div>
+      <div class="rx-hist-detail">${escHtml(it.dosage)} · ${escHtml(it.frequency)} · ${escHtml(it.duration)}</div>
+    </div>`
+  }).join('')
+  const confirmHtml = `
+    <div style="text-align:left">
+      <div class="confirm-pat-chip"><i class="ph-fill ph-user"></i> ${escHtml(patientNameForConfirm)}</div>
+      <div style="margin-bottom:12px">
+        <div class="text-block-label"><i class="ph ph-note-pencil"></i> Advice to patient</div>
+        <div class="text-block">${escHtml(advice)}</div>
+      </div>
+      <div>
+        <div class="text-block-label"><i class="ph ph-pill"></i> Prescription (${items.length})</div>
+        <div class="confirm-rx-list">${drugRows}</div>
+      </div>
+    </div>`
+  // Use a bespoke confirm modal so we can render rich HTML (showConfirm only takes plain text)
+  const confirmed = await new Promise(resolve => {
+    const bd = document.createElement('div')
+    bd.className = 'modal-backdrop'
+    bd.innerHTML = `<div class="modal-card sheet"><div class="sheet-head-sticky"><div class="sheet-handle"></div><div class="modal-title" style="margin-bottom:0">Confirm Submission</div></div><div class="modal-msg">${confirmHtml}</div><div class="modal-actions"><button class="btn-secondary" data-act="cancel">Cancel</button><button class="btn-primary" data-act="ok"><i class="ph-bold ph-check"></i> Confirm &amp; Submit</button></div></div>`
+    document.body.appendChild(bd)
+    const close = v => { bd.remove(); resolve(v) }
+    bd.addEventListener('click', e => { if (e.target === bd) close(false) })
+    bd.querySelectorAll('[data-act="cancel"]').forEach(b => b.addEventListener('click', () => close(false)))
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => close(true))
+  })
+  if (!confirmed){ __reenable(); return }
+
+  const { data: apptRow, error: apptErr } = await supabase.from('appointments').select('patient_id').eq('id', activeConsultApptId).single()
+  if (apptErr || !apptRow){ setErr('Could not load appointment: ' + (apptErr ? apptErr.message : 'not found')); return }
+
+  const { error: updateErr } = await supabase.from('appointments').update({ status:'completed', advice_to_patient: advice, medical_record: medicalRecord || null }).eq('id', activeConsultApptId)
+  if (updateErr){ setErr('Failed to complete appointment: ' + updateErr.message); return }
+
+  const { data: presc, error: prescErr } = await supabase.from('prescriptions').insert({ appointment_id: activeConsultApptId, doctor_id: currentUser.id, patient_id: apptRow.patient_id }).select('id').single()
+  if (prescErr || !presc){ setErr('Consultation saved, but prescription creation failed: ' + (prescErr ? prescErr.message : 'unknown error')); return }
+
+  const itemsToInsert = items.map(it => ({ ...it, prescription_id: presc.id }))
+  const { error: itemsErr } = await supabase.from('prescription_items').insert(itemsToInsert)
+  if (itemsErr){ setErr('Consultation saved, but adding drug items failed: ' + itemsErr.message); return }
+
+  const { error: paymentErr } = await supabase.rpc('create_payment_for_prescription', { p_prescription_id: presc.id })
+  if (paymentErr){ setErr('Consultation saved, but payment creation failed: ' + paymentErr.message); return }
+
+  showToast('success','Consultation completed and prescription saved.')
+  activeConsultApptId = null
+  setTimeout(() => {
+    document.getElementById('consultBackdrop').style.display = 'none'
+    loadAppointments(); loadHistoryList(); loadOverview()
+  }, 900)
+  } catch(err){
+    // TASK 6: safety net — surface unexpected error and re-enable button
+    handleErr(err, 'Submission failed')
+  } finally {
+    __reenable()
+  }
+})
+
+/* ============ PATIENT LOOKUP ============ */
+// Realtime patient search wired via wireRealtimePatientSearch()
+
+
+/* TASK 2: cache of patient IDs the current doctor has had at least one appointment with */
+let __myPatientIdsCache = null
+async function getMyPatientIds(){
+  if (__myPatientIdsCache) return __myPatientIdsCache
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('patient_id, doctor_slots!inner(doctor_id)')
+    .eq('doctor_slots.doctor_id', currentUser.id)
+    .in('status', ['pending','approved','completed'])
+  if (error){ console.warn('getMyPatientIds', error); return [] }
+  const ids = Array.from(new Set((data||[]).map(r => r.patient_id).filter(Boolean)))
+  __myPatientIdsCache = ids
+  return ids
+}
+
+
+
+/* ============ CUSTOM SELECT (ported from patient) ============ */
+const CS_STATE = {}
+document.addEventListener('click', e => { if (!e.target.closest('.custom-select-wrap')) document.querySelectorAll('.custom-select-wrap.open').forEach(w => w.classList.remove('open')) })
+function _csRender(id){
+  const wrap = document.getElementById(id); const st = CS_STATE[id]; if (!wrap || !st) return
+  const isFilter = wrap.classList.contains('cs-filter')
+  const caretIcon = isFilter ? 'ph-funnel-simple' : 'ph-caret-circle-down'
+  const sel = st.options.find(o => String(o.value) === String(st.value))
+  const labelText = sel ? sel.label : (st.placeholder || 'Select…'); const cls = sel ? '' : ' placeholder'
+  const opts = st.options.length ? st.options.map((o) => `<div class="cs-option${String(o.value)===String(st.value)?' active':''}" data-v="${escHtml(o.value)}" role="option">${escHtml(o.label)}${String(o.value)===String(st.value)?'<i class="ph ph-check"></i>':''}</div>`).join('') : '<div class="cs-option disabled">No options</div>'
+  wrap.innerHTML = `<button type="button" class="custom-select-trigger" aria-haspopup="listbox" tabindex="0"><span class="cs-label${cls}">${escHtml(labelText)}</span><i class="ph-fill ${caretIcon} cs-caret"></i></button><div class="custom-select-options" role="listbox">${opts}</div>`
+  const trig = wrap.querySelector('.custom-select-trigger')
+  const openIt = () => { document.querySelectorAll('.custom-select-wrap.open').forEach(w => { if (w.id !== id) w.classList.remove('open') }); wrap.classList.add('open') }
+  const closeIt = () => wrap.classList.remove('open')
+  trig.addEventListener('click', e => { e.stopPropagation(); wrap.classList.contains('open') ? closeIt() : openIt() })
+  wrap.querySelectorAll('.cs-option').forEach(opt => {
+    opt.addEventListener('click', e => { e.stopPropagation(); const v = opt.dataset.v; CS_STATE[id].value = v; _csRender(id); closeIt(); if (st.onChange) st.onChange(v) })
+  })
+}
+function initCS(id, options, opts={}){ const wrap = document.getElementById(id); if (!wrap) return; CS_STATE[id] = { options: options || [], value: opts.value !== undefined ? opts.value : (wrap.dataset.csDefault || ''), placeholder: opts.placeholder || 'Select…', onChange: opts.onChange || null }; _csRender(id) }
+
+
+/* ============ HISTORY: clickable list + filter ============ */
+let __historyStatus = 'all'
+let __historyCache = []
+async function loadHistoryList(){
+  const el = document.getElementById('historyList')
+  if (!el) return
+  el.innerHTML = `<div class="state-box"><i class="ph ph-spinner spin"></i> Loading…</div>`
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, appointment_code, assigned_time, reason, status, advice_to_patient, cancellation_note, medical_record, doctor_slots!inner ( doctor_id, date, shift ), patients ( id, full_name )')
+    .eq('doctor_slots.doctor_id', currentUser.id)
+    .in('status', ['completed','missed','cancelled'])
+    .order('date',{ascending:false, referencedTable:'doctor_slots'})
+    .order('assigned_time',{ascending:false})
+  if (error){ el.innerHTML = `<div class="state-box"><i class="ph ph-warning-circle"></i>Error loading history.</div>`; return }
+  __historyCache = data || []
+  renderHistoryList()
+}
+function renderHistoryList(){
+  const el = document.getElementById('historyList'); if (!el) return
+  const rows = __historyStatus === 'all' ? __historyCache : __historyCache.filter(r => r.status === __historyStatus)
+  renderApptAccordion(el, rows, { actions:false, emptyText:'No appointments in this view.' })
+}
+function openHistoryDetail(r){
+  if (!r) return
+  const notes = r.status==='cancelled' ? r.cancellation_note : r.advice_to_patient
+  const notesLabel = r.status==='cancelled' ? 'Cancellation note' : 'Advice to patient'
+  const html = `
+    <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
+      <div style="display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:var(--brand-grad);color:#fff">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px"><i class="ph-fill ph-user"></i></div>
+        <div>
+          <div style="font-weight:700;font-size:15px">${escHtml(r.patients?.full_name || 'Unknown')}</div>
+          <div style="opacity:.85;font-size:12px">${escHtml(r.appointment_code || r.id)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">Date</div><div style="font-weight:600">${formatDate(r.doctor_slots?.date)}</div></div>
+        <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">Time</div><div style="font-weight:600">${escHtml(formatTime(r.assigned_time))}</div></div>
+        <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">Shift</div><div>${badge(r.doctor_slots?.shift)}</div></div>
+        <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">Status</div><div>${badge(r.status)}</div></div>
+      </div>
+      <div><div class="text-block-label"><i class="ph ph-note"></i> Reason</div><div class="text-block${r.reason ? '' : ' muted'}">${escHtml(r.reason || '—')}</div></div>
+      ${notes ? `<div><div class="text-block-label"><i class="ph ph-note-pencil"></i> ${escHtml(notesLabel)}</div><div class="text-block">${escHtml(notes)}</div></div>` : ''}
+      ${r.medical_record ? `<div><div class="text-block-label"><i class="ph ph-file-text"></i> Medical record</div><div class="text-block">${escHtml(r.medical_record)}</div></div>` : ''}
+    </div>`
+  showInfoModal('Appointment details', html)
+}
+
+/* ============ REALTIME PATIENT SEARCH ============ */
+let __patSearchTimer = null
+function wireRealtimePatientSearch(){
+  const input = document.getElementById('patientSearchInput'); if (!input) return
+  const clearBtn = document.getElementById('patientSearchClear')
+  const syncClear = () => { if (clearBtn) clearBtn.classList.toggle('show', !!input.value.trim()) }
+  input.addEventListener('input', () => {
+    syncClear()
+    clearTimeout(__patSearchTimer)
+    __patSearchTimer = setTimeout(runPatientSearch, 200)
+  })
+  if (clearBtn){
+    clearBtn.addEventListener('click', () => {
+      input.value = ''
+      syncClear()
+      clearTimeout(__patSearchTimer)
+      runPatientSearch()
+      input.focus()
+    })
+  }
+  syncClear()
+  loadRecentPatients()
+}
+function _patInitials(name){
+  if (!name) return '?'
+  return String(name).trim().split(/\s+/).slice(0,2).map(s => s[0] || '').join('').toUpperCase() || '?'
+}
+function renderPatientList(rows, sectionLabel, sectionIcon){
+  const head = sectionLabel ? `<div class="pat-section-label"><i class="ph ${sectionIcon||'ph-users-three'}"></i> ${escHtml(sectionLabel)}</div>` : ''
+  return `${head}<div class="pat-list">${rows.map(p => `
+    <div class="pat-list-item">
+      <div class="pat-list-avatar">${escHtml(_patInitials(p.full_name))}</div>
+      <div class="pat-list-meta">
+        <div class="pat-list-name">${escHtml(p.full_name || 'Unknown')}</div>
+        <div class="pat-list-sub">
+          ${p.gender ? `<span><i class="ph ph-user"></i> ${escHtml(p.gender)}</span>` : ''}
+          ${p.phone ? `<span><i class="ph ph-phone"></i> ${escHtml(p.phone)}</span>` : ''}
+          ${(!p.gender && !p.phone) ? `<span><i class="ph ph-minus"></i> No contact details</span>` : ''}
+        </div>
+      </div>
+      <button class="btn-primary btn-sm" data-view-patient="${escHtml(p.id)}"><i class="ph-bold ph-eye"></i> View</button>
+    </div>`).join('')}</div>`
+}
+function wirePatientListActions(host){
+  host.querySelectorAll('[data-view-patient]').forEach(b => {
+    b.addEventListener('click', () => openPatientProfileModal(b.dataset.viewPatient))
+  })
+}
+/* Default state: the doctor's most recently seen patients */
+async function loadRecentPatients(){
+  const resultsEl = document.getElementById('patientSearchResults')
+  if (!resultsEl) return
+  resultsEl.innerHTML = `<div style="padding:14px;color:var(--text-muted);font-size:13px"><i class="ph ph-spinner spin"></i> Loading recent patients…</div>`
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('patient_id, created_at, doctor_slots!inner(doctor_id)')
+    .eq('doctor_slots.doctor_id', currentUser.id)
+    .order('created_at', { ascending:false })
+    .limit(60)
+  if (error){ resultsEl.innerHTML = `<div class="state-box"><i class="ph ph-warning-circle"></i>Could not load recent patients.</div>`; return }
+  const ids = []
+  ;(data || []).forEach(r => { if (r.patient_id && !ids.includes(r.patient_id) && ids.length < 6) ids.push(r.patient_id) })
+  if (!ids.length){ resultsEl.innerHTML = `<div class="state-box"><i class="ph ph-user-minus"></i>You have no patients yet.</div>`; return }
+  const { data: pats, error: pErr } = await supabase.from('patients').select('id, full_name, gender, phone').in('id', ids)
+  if (pErr || !pats || !pats.length){ resultsEl.innerHTML = `<div class="state-box"><i class="ph ph-user-minus"></i>No recent patients.</div>`; return }
+  const ordered = ids.map(id => pats.find(p => p.id === id)).filter(Boolean)
+  resultsEl.innerHTML = renderPatientList(ordered, 'Recently seen', 'ph-clock-counter-clockwise')
+  wirePatientListActions(resultsEl)
+}
+async function runPatientSearch(){
+  const query = document.getElementById('patientSearchInput').value.trim()
+  const resultsEl = document.getElementById('patientSearchResults')
+  const historyEl = document.getElementById('patientHistory')
+  if (historyEl) historyEl.innerHTML = ''
+  if (!query){ return loadRecentPatients() }
+  resultsEl.innerHTML = `<div style="padding:14px;color:var(--text-muted);font-size:13px"><i class="ph ph-spinner spin"></i> Searching…</div>`
+  const myIds = await getMyPatientIds()
+  if (!myIds.length){ resultsEl.innerHTML = `<div class="state-box"><i class="ph ph-user-minus"></i>You have no patients yet.</div>`; return }
+  const { data, error } = await supabase.from('patients').select('id, full_name, gender, phone').in('id', myIds).or(`full_name.ilike.%${query}%,email.ilike.%${query}%`).limit(10)
+  if (error){ resultsEl.innerHTML = `<div class="state-box"><i class="ph ph-warning-circle"></i>Error searching patients.</div>`; return }
+  const rows = data || []
+  if (!rows.length){ resultsEl.innerHTML = `<div class="state-box"><i class="ph ph-user-minus"></i>No matching patients.</div>`; return }
+  resultsEl.innerHTML = renderPatientList(rows, `Search results (${rows.length})`, 'ph-magnifying-glass')
+  wirePatientListActions(resultsEl)
+}
+
+// TASK 2: patient profile modal — profile header, medical records (read-only),
+// appointment history list. Reuses the existing .modal-backdrop / .modal-card
+// pattern. Each appointment row opens the Task-3 detail modal (stacked).
+async function openPatientProfileModal(patientId){
+  if (!patientId) return
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.innerHTML = `<div class="modal-card wide sheet">
+    <div class="sheet-head-sticky"><div class="sheet-handle"></div></div>
+    <div id="ppBody"><div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px"><i class="ph ph-spinner spin"></i> Loading patient…</div></div>
+    <div class="modal-actions" style="margin-top:18px"><button class="btn-secondary" data-act="close">Close</button></div>
+  </div>`
+  document.body.appendChild(bd)
+  const close = () => bd.remove()
+  bd.addEventListener('click', e => { if (e.target === bd) close() })
+  bd.querySelectorAll('[data-act="close"]').forEach(b => b.addEventListener('click', close))
+
+  const body = bd.querySelector('#ppBody')
+  // Fetch patient, medical record, and appointment history in parallel
+  const [pRes, mrRes, apRes, rxRes] = await Promise.all([
+    supabase.from('patients').select('id, full_name, gender, phone').eq('id', patientId).maybeSingle(),
+    supabase.from('patient_medical_records').select('genotype, blood_group, allergies, chronic_conditions, emergency_contact_name, emergency_contact_number').eq('patient_id', patientId).maybeSingle(),
+    supabase.from('appointments').select('id, appointment_code, assigned_time, reason, status, advice_to_patient, medical_record, cancellation_note, created_at, doctor_slots ( date, shift )').eq('patient_id', patientId).order('created_at',{ascending:false}),
+    supabase.from('prescriptions').select('id, status, created_at, appointment_id, appointments ( appointment_code, reason, status, created_at ), prescription_items ( dosage, frequency, duration, quantity, drug_stock ( drug_name, unit ) )').eq('patient_id', patientId).order('created_at',{ascending:false})
+  ])
+
+  if (pRes.error){
+    body.innerHTML = `<div class="state-box"><i class="ph ph-warning-circle"></i>Could not load patient.</div>`
+    return
+  }
+  const p = pRes.data || { full_name: 'Unknown' }
+
+  // Medical record block: preserve existing permission error handling
+  let mrHtml = ''
+  const mrErr = mrRes.error
+  if (mrErr && mrErr.code !== 'PGRST116'){
+    if (mrErr.code === '42501'){
+      mrHtml = `<div class="pp-empty"><i class="ph ph-lock"></i> You don't have permission to view this patient's medical record.</div>`
+    } else {
+      mrHtml = `<div class="pp-empty"><i class="ph ph-warning-circle"></i> Could not load medical record.</div>`
+    }
+  } else if (!mrRes.data){
+    mrHtml = `<div class="pp-empty"><i class="ph ph-info"></i> This patient has not filled in their medical record yet.</div>`
+  } else {
+    const mr = mrRes.data
+    const row = (k, v) => `<div class="pp-mr-row"><strong>${k}</strong><span>${escHtml(v || '—')}</span></div>`
+    mrHtml = `<div class="pp-mr-card">
+      ${row('Genotype', mr.genotype)}
+      ${row('Blood Group', mr.blood_group)}
+      ${row('Allergies', mr.allergies)}
+      ${row('Chronic Conditions', mr.chronic_conditions)}
+      ${row('Emergency Contact Name', mr.emergency_contact_name)}
+      ${row('Emergency Contact Number', mr.emergency_contact_number)}
+    </div>`
+  }
+
+  // Appointment history list — just code + date; click opens detail modal
+  const appts = (apRes.data || [])
+  let apHtml = ''
+  if (apRes.error){
+    apHtml = `<div class="pp-empty"><i class="ph ph-warning-circle"></i> Could not load appointment history.</div>`
+  } else if (!appts.length){
+    apHtml = `<div class="pp-empty"><i class="ph ph-tray"></i> No appointment history for this patient.</div>`
+  } else {
+    // PART 2 (items 1+3+4 unified): the same accordion used by the Appointments
+    // and History tabs is rendered here, and each appointment's prescription is
+    // shown INSIDE its own accordion body — no separate Prescription History list.
+    apHtml = `<div id="ppApptAcc"></div>`
+  }
+
+  // Prescriptions keyed by appointment_id (prescriptions.appointment_id is NOT NULL
+  // and references appointments(id), so this is a safe 1-per-appointment lookup).
+  const rxMap = {}
+  if (rxRes && !rxRes.error){
+    (rxRes.data || []).forEach(rx => { if (rx.appointment_id) rxMap[rx.appointment_id] = rx })
+  }
+
+  body.innerHTML = `
+    <div class="pp-head">
+      <div class="pp-avatar">${escHtml(_patInitials(p.full_name))}</div>
+      <div class="pp-head-meta">
+        <div class="pp-head-name">${escHtml(p.full_name || 'Unknown')}</div>
+        <div class="pp-head-sub">
+          ${p.gender ? `<span><i class="ph ph-user"></i> ${escHtml(p.gender)}</span>` : ''}
+          ${p.phone ? `<span><i class="ph ph-phone"></i> ${escHtml(p.phone)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="pp-section">
+      <div class="pp-section-title"><i class="ph-fill ph-heartbeat" style="color:var(--primary)"></i> Medical Record <span class="pp-ro">(read-only)</span></div>
+      ${mrHtml}
+    </div>
+    <div class="pp-section">
+      <div class="pp-section-title"><i class="ph ph-clock-counter-clockwise" style="color:var(--primary)"></i> Appointment History &amp; Prescriptions</div>
+      ${apHtml}
+    </div>`
+
+  const ppAcc = body.querySelector('#ppApptAcc')
+  if (ppAcc){
+    renderApptAccordion(ppAcc, appts, {
+      actions: false,
+      showRx: true,
+      rxMap: rxMap,
+      patientName: p.full_name,
+      emptyText: 'No appointment history for this patient.'
+    })
+  }
+}
+
+// TASK 3: appointment detail modal (opens on top of the profile modal)
+function openAppointmentDetailModal(a, rx){
+  if (!a) return
+  const notesLabel = a.status === 'cancelled' ? 'Cancellation note' : 'Advice to patient'
+  const notesVal = a.status === 'cancelled' ? a.cancellation_note : a.advice_to_patient
+  const html = `
+    <div class="pp-head" style="margin-top:-4px">
+      <div class="pp-avatar"><i class="ph-fill ph-clipboard-text" style="font-size:22px"></i></div>
+      <div class="pp-head-meta">
+        <div class="pp-head-name" style="font-size:15px">${escHtml(a.appointment_code || a.id)}</div>
+        <div class="pp-head-sub">
+          <span><i class="ph ph-calendar"></i> ${escHtml(formatDate(a.doctor_slots?.date || a.created_at))}</span>
+          <span><i class="ph ph-clock"></i> ${escHtml(formatTime(a.assigned_time))}</span>
+          <span>${badge(a.status)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="pp-section">
+      <div class="text-block-label"><i class="ph ph-note"></i> Reason</div>
+      <div class="text-block${a.reason ? '' : ' muted'}">${escHtml(a.reason || '—')}</div>
+    </div>
+    ${notesVal ? `<div class="pp-section">
+      <div class="text-block-label"><i class="ph ph-note-pencil"></i> ${escHtml(notesLabel)}</div>
+      <div class="text-block">${escHtml(notesVal)}</div>
+    </div>` : ''}
+    <div class="pp-section">
+      <div class="text-block-label"><i class="ph ph-file-text"></i> Medical Record Note</div>
+      <div class="text-block${a.medical_record ? '' : ' muted'}">${escHtml(a.medical_record || '—')}</div>
+    </div>
+    <div class="pp-section">
+      <div class="text-block-label"><i class="ph ph-pill"></i> Prescription for this visit</div>
+      ${apptRxItemsHtml(rx)}
+    </div>`
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.style.zIndex = '9999'
+  bd.innerHTML = `<div class="modal-card wide sheet"><div class="sheet-head-sticky"><div class="sheet-handle"></div></div>${html}<div class="modal-actions" style="margin-top:18px"><button class="btn-primary" data-act="close">Close</button></div></div>`
+  document.body.appendChild(bd)
+  const close = () => bd.remove()
+  bd.addEventListener('click', e => { if (e.target === bd) close() })
+  bd.querySelectorAll('[data-act="close"]').forEach(b => b.addEventListener('click', close))
+}
+
+/* ============ Wire filters + realtime search after init ============ */
+function wireAppointmentsAndHistory(){
+  // Upcoming view: Pending / Approved pill toggle (Approved is the default)
+  document.querySelectorAll('#apptStatusPills [data-appt-status]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.apptStatus
+      if (v === __apptStatus) return
+      __apptStatus = v
+      document.querySelectorAll('#apptStatusPills [data-appt-status]').forEach(b => b.classList.toggle('selected', b === btn))
+      loadAppointments()
+    })
+  })
+  // History view: status pill toggle (All statuses is the default)
+  document.querySelectorAll('#historyStatusPills [data-history-status]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.historyStatus
+      if (v === __historyStatus) return
+      __historyStatus = v
+      document.querySelectorAll('#historyStatusPills [data-history-status]').forEach(b => b.classList.toggle('selected', b === btn))
+      renderHistoryList()
+    })
+  })
+  wireRealtimePatientSearch()
+}
+
+
+/* ==== TASK 8: glassmorphic soft-fade scroll edges (auto-install) ==== */
+;(function(){
+  function installFades(card){
+    if (!card || card.dataset.msfInstalled === '1') return
+    card.dataset.msfInstalled = '1'
+    var top = document.createElement('div'); top.className='msf-strip msf-top'
+    var bot = document.createElement('div'); bot.className='msf-strip msf-bot'
+    card.insertBefore(top, card.firstChild)
+    card.appendChild(bot)
+    function update(){
+      var st = card.scrollTop
+      var sh = card.scrollHeight - card.clientHeight
+      if (sh <= 4){ top.classList.remove('show'); bot.classList.remove('show'); return }
+      top.classList.toggle('show', st > 4)
+      bot.classList.toggle('show', st < sh - 4)
+    }
+    card.addEventListener('scroll', update, { passive:true })
+    // Re-check after paint + when child content mutates
+    setTimeout(update, 20); setTimeout(update, 250)
+    var mo = new MutationObserver(update); mo.observe(card, { childList:true, subtree:true, characterData:true })
+    window.addEventListener('resize', update)
+  }
+  function scan(root){
+    (root || document).querySelectorAll('.modal-card').forEach(installFades)
+  }
+  var obs = new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes && m.addedNodes.forEach(function(n){
+        if (n.nodeType !== 1) return
+        if (n.classList && n.classList.contains('modal-card')) installFades(n)
+        else if (n.querySelectorAll) scan(n)
+      })
+    })
+  })
+  obs.observe(document.body, { childList:true, subtree:true })
+  document.addEventListener('DOMContentLoaded', function(){ scan() })
+  scan()
+})();
+
+/* ==== TASK 9: keyboard-scrollable modals (auto-install) ====
+   Every .modal-card gets tabindex="-1" and is focused as soon as it becomes
+   visible, so native ArrowUp/ArrowDown scrolling works on desktop without a
+   mouse hovering the card. Covers modals appended dynamically (showConfirm,
+   showInfoModal, showPrompt, drug sheet, consult modal, patient profile, etc)
+   as well as the two static backdrops toggled via style.display. */
+;(function(){
+  function focusCard(card){
+    if (!card) return
+    if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1')
+    // Let the modal finish rendering/animating in before stealing focus.
+    setTimeout(() => { try { card.focus({ preventScroll:true }) } catch(_){ card.focus() } }, 30)
+  }
+  function tagAndFocus(card){
+    if (!card || card.dataset.kbScroll === '1') { if (card) focusCard(card); return }
+    card.dataset.kbScroll = '1'
+    focusCard(card)
+  }
+  function scan(root){
+    (root || document).querySelectorAll('.modal-card').forEach(tagAndFocus)
+  }
+  var obs = new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes && m.addedNodes.forEach(function(n){
+        if (n.nodeType !== 1) return
+        if (n.classList && n.classList.contains('modal-card')) tagAndFocus(n)
+        else if (n.querySelectorAll) scan(n)
+      })
+      // Static backdrops (changePasswordBackdrop, consultBackdrop) are shown/hidden
+      // via style.display rather than being inserted/removed from the DOM.
+      if (m.type === 'attributes' && m.target && m.target.classList && m.target.classList.contains('modal-backdrop')){
+        var disp = m.target.style && m.target.style.display
+        if (disp && disp !== 'none'){
+          var card = m.target.querySelector('.modal-card')
+          if (card) tagAndFocus(card)
+        }
+      }
+    })
+  })
+  obs.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['style'] })
+  document.addEventListener('DOMContentLoaded', function(){ scan() })
+  scan()
+})();
+
+/* =============== PROFILE =============== */
+async function loadProfile(){
+  const { data, error } = await supabase
+    .from('doctors')
+    .select('full_name, licence_number, email, phone')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (error || !data) { showToast('error','Error loading profile: ' + (error ? error.message : 'not found')); return }
+
+  document.getElementById('profAvatar').textContent = initials(data.full_name)
+  document.getElementById('profName').textContent = data.full_name ? ('Dr. ' + data.full_name) : '—'
+  document.getElementById('profEmail').textContent = data.email || '—'
+
+  document.getElementById('profFullName').textContent = data.full_name || '—'
+  document.getElementById('profLicence').textContent = data.licence_number || '—'
+  document.getElementById('profEmailRow').textContent = data.email || '—'
+  document.getElementById('profPhone').textContent = data.phone || '—'
+}
+
+document.getElementById('profRefreshBtn').addEventListener('click', () => refreshWithOverlay('page-profile', loadProfile, 'Profile'))
+
+/* Profile accordion: single-open-at-a-time */
+document.querySelectorAll('[data-pg-toggle]').forEach(head => {
+  head.addEventListener('click', () => {
+    const groupId = head.dataset.pgToggle
+    const group = document.getElementById(groupId)
+    const willOpen = !group.classList.contains('open')
+    document.querySelectorAll('.profile-group.open').forEach(g => { if (g !== group) g.classList.remove('open') })
+    group.classList.toggle('open', willOpen)
+  })
+})
+
+function clearProfilePasswordErrors(){
+  ['profCurPasswordErr','profNewPasswordErr','profConfirmPasswordErr'].forEach(id => document.getElementById(id).classList.remove('show'))
+  ;['profCurPassword','profNewPassword','profConfirmPassword'].forEach(id => document.getElementById(id).classList.remove('is-invalid'))
+}
+
+document.getElementById('profChangePasswordBtn').addEventListener('click', async (__ev) => { const __btn = __ev.currentTarget; setBtnLoading(__btn, true); try {
+  clearProfilePasswordErrors()
+  const curPass = document.getElementById('profCurPassword').value
+  const newPass = document.getElementById('profNewPassword').value
+  const confirmPass = document.getElementById('profConfirmPassword').value
+
+  let hasErr = false
+  if (!curPass) {
+    document.getElementById('profCurPasswordErr').classList.add('show')
+    document.getElementById('profCurPassword').classList.add('is-invalid')
+    hasErr = true
+  }
+  if (!newPass || newPass.length < 6) {
+    document.getElementById('profNewPasswordErr').classList.add('show')
+    document.getElementById('profNewPassword').classList.add('is-invalid')
+    hasErr = true
+  }
+  if (!confirmPass || confirmPass !== newPass) {
+    document.getElementById('profConfirmPasswordErr').classList.add('show')
+    document.getElementById('profConfirmPassword').classList.add('is-invalid')
+    hasErr = true
+  }
+  if (hasErr) return
+
+  const { error: reauthErr } = await supabase.auth.signInWithPassword({ email: currentUser.email, password: curPass })
+  if (reauthErr) {
+    document.getElementById('profCurPasswordErr').textContent = 'Current password is incorrect.'
+    document.getElementById('profCurPasswordErr').classList.add('show')
+    document.getElementById('profCurPassword').classList.add('is-invalid')
+    return
+  }
+
+  const { error: updateErr } = await supabase.auth.updateUser({ password: newPass })
+  if (updateErr) { showToast('error','Error updating password: ' + updateErr.message); return }
+
+  showToast('success','Password changed successfully.')
+  document.getElementById('profCurPassword').value = ''
+  document.getElementById('profNewPassword').value = ''
+  document.getElementById('profConfirmPassword').value = ''
+  clearProfilePasswordErrors()
+} finally { setBtnLoading(__btn, false) } })
+
+/* =============== HOVER + ARROW-KEY SCROLL =============== */
+/* When the mouse is over the side nav or the main content area, Up/Down arrow keys scroll that panel. */
+;(function setupHoverArrowScroll(){
+  const SCROLL_STEP = 80
+  let hoveredPanel = null // 'nav' | 'main' | null
+  const navScrollEl = () => document.getElementById('islandNavList')
+
+  const navHoverTarget = document.getElementById('islandNav')
+  const mainHoverTarget = document.querySelector('main.main')
+
+  if (navHoverTarget){
+    navHoverTarget.addEventListener('mouseenter', () => { hoveredPanel = 'nav' })
+    navHoverTarget.addEventListener('mouseleave', () => { if (hoveredPanel === 'nav') hoveredPanel = null })
+  }
+  if (mainHoverTarget){
+    mainHoverTarget.addEventListener('mouseenter', () => { hoveredPanel = 'main' })
+    mainHoverTarget.addEventListener('mouseleave', () => { if (hoveredPanel === 'main') hoveredPanel = null })
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+    if (!hoveredPanel) return
+    const tag = (document.activeElement && document.activeElement.tagName) || ''
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable)) return
+
+    const delta = e.key === 'ArrowDown' ? SCROLL_STEP : -SCROLL_STEP
+    if (hoveredPanel === 'nav' && navScrollEl()){
+      navScrollEl().scrollBy({ top: delta, behavior: 'smooth' })
+      e.preventDefault()
+    } else if (hoveredPanel === 'main'){
+      window.scrollBy({ top: delta, behavior: 'smooth' })
+      e.preventDefault()
+    }
+  })
+})()
+
+/* GO */
+init()
+</script>
+
+</body>
+</html>
