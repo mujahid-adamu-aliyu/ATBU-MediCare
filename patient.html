@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>ATBU MediCare — Patient Dashboard</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('atbu-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.2/src/duotone/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.2/src/regular/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.2/src/fill/style.css" />
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --primary:#1E7FB8; --primary-mid:#2C97D6; --primary-light:#5CB8E4;
+  --accent-green:#1E8449; --accent-gold:#F4C430;
+  --bg:#F0F9FD; --panel-bg:#FFFFFF; --neu-bg:#FFFFFF;
+  --neu-shadow-d:#c9e4f0; --neu-shadow-l:#ffffff;
+  --text:#0F172A; --text-muted:#64748B;
+  --input-bg:#FFFFFF; --input-border:#CBD5E1; --input-bg-err:#FEF2F2;
+  --card-border:rgba(255,255,255,0.80); --card-border-solid:#CBD5E1;
+  --success:#1E8449; --error:#EF4444; --warning:#F59E0B; --info:#2563EB; --white:#FFFFFF;
+  --shadow-rgb:30,127,184;
+  --radius-card:20px; --radius-input:12px; --radius-btn:10px;
+  --overlay-grad:linear-gradient(150deg,#2C97D6 0%,#1E7FB8 100%);
+  --brand-grad:linear-gradient(135deg,#2C97D6 0%,#1E7FB8 100%);
+  --content-max:1200px;
+  --med-icon:rgba(30,127,184,0.10);
+}
+[data-theme="dark"]{
+  --primary:#5CB8E4; --primary-mid:#2C97D6; --primary-light:#8ECFEE;
+  --accent-green:#2FA05E; --accent-gold:#F4C430;
+  --bg:#0E1A22; --panel-bg:#142833; --neu-bg:#12242E;
+  --neu-shadow-d:#081117; --neu-shadow-l:#1E3A48;
+  --text:#EAF6FB; --text-muted:#8FB3C3;
+  --input-bg:#102530; --input-border:#28455A; --input-bg-err:#2A1018;
+  --card-border:rgba(92,184,228,0.22); --card-border-solid:#22364A;
+  --success:#2FA05E; --error:#F87171; --warning:#FBBF24; --info:#60A5FA; --white:#EAF6FB;
+  --shadow-rgb:92,184,228;
+  --overlay-grad:linear-gradient(150deg,#5CB8E4 0%,#1E7FB8 100%);
+  --brand-grad:linear-gradient(135deg,#5CB8E4 0%,#1E7FB8 100%);
+  --med-icon:rgba(92,184,228,0.14);
+  --stat-amber:#FBBF24; --stat-blue:#60A5FA;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none}
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
+.drawer-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;}
+html,body{background:var(--bg);color:var(--text);font-family:'Poppins',sans-serif;min-height:100vh;transition:background 250ms ease,color 250ms ease}
+body{overflow-x:hidden;overscroll-behavior-y:none}
+.blob{position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none}
+.blob1{width:500px;height:500px;background:rgba(16,185,129,0.12);top:-150px;left:-150px;animation:blobDrift1 22s ease-in-out infinite alternate}
+.blob2{width:420px;height:420px;background:rgba(var(--shadow-rgb),0.10);bottom:-120px;right:-120px;filter:blur(80px);animation:blobDrift2 18s ease-in-out infinite alternate}
+@keyframes blobDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(120px,80px) scale(1.15)}}
+@keyframes blobDrift2{0%{transform:translate(0,0) scale(1.1)}100%{transform:translate(-100px,-60px) scale(1)}}
+
+/* Medical snow background */
+.med-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.med-bg i{position:absolute;color:var(--med-icon);font-size:26px;top:-40px;animation:medFall linear infinite;opacity:.9}
+@keyframes medFall{
+  0%{transform:translateY(-40px) rotate(0deg);opacity:0}
+  10%{opacity:.9}
+  90%{opacity:.9}
+  100%{transform:translateY(105vh) rotate(360deg);opacity:0}
+}
+.receipt-med-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:var(--radius-card);z-index:0}
+.receipt-med-bg i{position:absolute;color:var(--med-icon);font-size:22px;top:-30px;animation:medFall linear infinite;opacity:.8}
+@media print{
+  .med-bg,.blob{display:none !important}
+}
+
+#authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;font-size:16px;color:var(--text-muted);gap:14px;position:relative;z-index:1;padding:20px;text-align:center}
+#authScreen .auth-logo-pulse{animation:authLogoPulse 0.85s cubic-bezier(0.45,0,0.55,1) infinite}
+#authScreen img{width:64px;height:64px;border-radius:14px;box-shadow:0 6px 20px rgba(var(--shadow-rgb),0.35)}
+@keyframes authLogoPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn.loading{
+  background: var(--text-muted) !important;
+  border-color: var(--text-muted) !important;
+  color: var(--panel-bg) !important;
+  opacity: .6;
+  pointer-events: none;
+}
+.btn.loading .btn-icon,
+.btn.loading .btn-text{
+  display: none;
+}
+.btn-dots{
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn.loading .btn-dots{
+  display: inline-flex;
+}
+.btn-dots span{
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.btn-dots span:nth-child(1){ animation-delay: 0s; }
+.btn-dots span:nth-child(2){ animation-delay: .15s; }
+.btn-dots span:nth-child(3){ animation-delay: .3s; }
+@keyframes dotPulse{
+  0%, 80%, 100% { transform: scale(1);   opacity: .6; }
+  40%           { transform: scale(1.6); opacity: 1;  }
+}
+
+.layout{position:relative;z-index:1}
+.topbar-shell{position:fixed;top:0;left:0;right:0;z-index:90;max-width:var(--content-max);margin:12px auto 0;padding-inline:clamp(64px,10vw,120px);pointer-events:none}
+@media(min-width:769px){
+  .topbar-shell{max-width:none;margin:14px 16px 0;padding-inline:0}
+}
+.topbar{position:relative;width:100%;padding:10px 20px;background:color-mix(in srgb, var(--panel-bg) 78%, transparent);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.12);display:flex;align-items:center;gap:14px;pointer-events:auto;transition:box-shadow 260ms ease}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:42px;height:42px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;overflow:hidden;flex-shrink:0}
+.brand-icon img{width:100%;height:100%;object-fit:contain;display:block}
+.brand-name{font-weight:800;font-size:15px;color:var(--text);line-height:1.1;letter-spacing:.01em}
+.brand-kicker{font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;line-height:1.2;margin-top:2px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer;font-size:18px;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1)}
+.icon-btn:hover{transform:translateY(-2px) scale(1.08);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.18);border-color:var(--primary)}
+.icon-btn:active{transform:translateY(0) scale(0.95)}
+.icon-btn i{transition:transform 220ms cubic-bezier(0.34,1.56,0.64,1)}
+.icon-btn:hover i{transform:rotate(-8deg)}
+.logout-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);font:600 13px 'Poppins';cursor:pointer;transition:all 180ms ease}
+.logout-btn:hover{background:rgba(239,68,68,0.18)}
+.desktop-logout-btn{display:inline-flex}
+@media(max-width:768px){.desktop-logout-btn{display:none}}
+.hamburger{display:none}
+
+.topnav-strip-wrapper{position:fixed;top:78px;z-index:89;left:0;right:0;max-width:var(--content-max);margin:14px auto 0;padding-inline:clamp(64px,10vw,120px);pointer-events:none}
+.topnav-strip-outer{padding:14px 16px;background:color-mix(in srgb, var(--panel-bg) 78%, transparent);backdrop-filter:blur(14px) saturate(160%);border:1.5px solid var(--card-border-solid);border-radius:24px;box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.08);pointer-events:auto}
+.topnav-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.nav-item{display:flex;align-items:center;justify-content:center;gap:9px;padding:0 16px;min-height:44px;background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:10px;color:var(--text-muted);font:700 13px 'Poppins',sans-serif;opacity:.6;cursor:pointer;transition:all 200ms ease}
+.nav-item i{font-size:18px}
+.nav-item:hover{opacity:.9;transform:translateY(-1px)}
+.nav-item.active{color:#fff;border-color:transparent;background:var(--brand-grad);box-shadow:0 6px 20px rgba(var(--shadow-rgb),0.40);opacity:1}
+
+/* ============= DESKTOP ISLAND SIDEBAR ============= */
+:root{ --island-w-collapsed:68px; --island-w-expanded:250px; }
+.island{
+  position:fixed; top:var(--main-top-offset,90px); bottom:12px; left:16px; z-index:88;
+  width:var(--island-w-expanded);
+  background:color-mix(in srgb, var(--panel-bg) 86%, transparent);
+  backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%);
+  border:1.5px solid var(--card-border-solid); border-radius:var(--radius-card);
+  box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.14);
+  display:none; flex-direction:column; overflow:hidden;
+  transition:box-shadow 260ms ease;
+}
+.island-label{ display:inline-block; opacity:1; }
+
+.island-profile{ display:flex; align-items:center; gap:10px; padding:10px 14px 16px; flex-shrink:0; min-width:0; cursor:default; transition:transform 220ms ease }
+.island-profile:hover{ transform:translateX(2px) }
+.island-avatar{
+  width:38px; height:38px; border-radius:50%; background:var(--brand-grad); color:#fff;
+  display:flex; align-items:center; justify-content:center; font:800 14px 'Poppins',sans-serif;
+  flex-shrink:0; box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.30);
+  transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 260ms ease;
+}
+.island-profile:hover .island-avatar{ transform:scale(1.08) rotate(-4deg); box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.45) }
+.island-profile-meta{ min-width:0; overflow:hidden }
+.island-profile-name{ font:700 13.5px 'Poppins',sans-serif; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.island-profile-badge{
+  display:inline-block; margin-top:3px; font:700 10px 'Poppins',sans-serif; text-transform:uppercase; letter-spacing:.06em;
+  color:var(--primary); background:rgba(var(--shadow-rgb),0.10); border-radius:10px; padding:2px 8px; white-space:nowrap;
+  transition:background 220ms ease, letter-spacing 220ms ease;
+}
+.island-profile:hover .island-profile-badge{ background:rgba(var(--shadow-rgb),0.18); letter-spacing:.09em }
+
+.island-divider{ height:1px; background:var(--card-border-solid); margin:0 14px; flex-shrink:0; opacity:.7 }
+
+.island-nav{ flex:1; display:flex; flex-direction:column; gap:6px; padding:14px 10px; overflow-y:auto; overflow-x:hidden; min-height:0; scrollbar-width:none }
+.island-nav::-webkit-scrollbar{ display:none }
+.island-nav-item{
+  position:relative; display:flex; align-items:center; gap:12px; min-height:44px;
+  border-radius:14px; padding:0 13px; color:var(--text-muted); background:transparent; border:none;
+  cursor:pointer; font:700 13px 'Poppins',sans-serif;
+  transition:background 220ms ease, color 220ms ease, transform 220ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 220ms ease;
+  text-align:left; width:100%; justify-content:flex-start;
+  opacity:0; transform:translateX(-10px); animation:islandItemIn 420ms ease forwards;
+}
+@keyframes islandItemIn{ to{ opacity:1; transform:translateX(0) } }
+.island-nav-item:nth-child(1){ animation-delay:40ms }
+.island-nav-item:nth-child(2){ animation-delay:80ms }
+.island-nav-item:nth-child(3){ animation-delay:120ms }
+.island-nav-item:nth-child(4){ animation-delay:160ms }
+.island-nav-item:nth-child(5){ animation-delay:200ms }
+.island-nav-item:nth-child(6){ animation-delay:240ms }
+.island-nav-item:nth-child(7){ animation-delay:280ms }
+.island-nav-item:nth-child(8){ animation-delay:320ms }
+.island-nav-item i{ font-size:19px; flex-shrink:0; width:22px; text-align:center; transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1) }
+.island-nav-item:hover{ background:rgba(var(--shadow-rgb),0.08); color:var(--text); transform:translateX(4px) }
+.island-nav-item:hover i{ transform:scale(1.15) rotate(-6deg) }
+.island-nav-item:active{ transform:translateX(4px) scale(0.97) }
+.island-nav-item.active{ background:rgba(var(--shadow-rgb),0.12); color:var(--primary); box-shadow:0 2px 10px rgba(var(--shadow-rgb),0.10) }
+.island-nav-item.active::before{
+  content:''; position:absolute; left:-10px; top:8px; bottom:8px; width:4px; border-radius:0 4px 4px 0; background:var(--brand-grad);
+  transition:top 260ms cubic-bezier(0.34,1.56,0.64,1), bottom 260ms cubic-bezier(0.34,1.56,0.64,1);
+}
+.island-nav-item:focus-visible{ outline:2px solid var(--primary); outline-offset:2px }
+
+.island-footer{ flex-shrink:0; padding:14px; display:flex; align-items:center; gap:10px; min-width:0; cursor:default; transition:transform 220ms ease }
+.island-footer:hover{ transform:translateX(2px) }
+.island-footer-glyph{
+  width:30px; height:30px; border-radius:9px; background:rgba(var(--shadow-rgb),0.10); color:var(--primary);
+  display:flex; align-items:center; justify-content:center; font:800 11px 'Poppins',sans-serif; flex-shrink:0;
+  transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1);
+}
+.island-footer:hover .island-footer-glyph{ transform:scale(1.08) rotate(4deg) }
+.island-footer-lines{ min-width:0; overflow:hidden }
+.island-footer-lines div{ font-size:10.5px; line-height:1.5; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.island-footer-lines div:first-child{ font-weight:700; color:var(--text) }
+@media (prefers-reduced-motion: reduce){
+  .island-nav-item{ opacity:1; transform:none; animation:none }
+  .island-profile, .island-footer, .island-avatar, .island-footer-glyph, .island-profile-badge, .island-nav-item i{ transition:none }
+  *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important }
+}
+
+.main{max-width:var(--content-max);margin:0 auto 60px;padding:clamp(24px,5vw,60px) clamp(64px,10vw,120px);padding-top:var(--main-top-offset,200px);position:relative;z-index:1}
+.page{display:none}
+.page.active{display:block;animation:fadeUp 420ms cubic-bezier(0.22,1,0.36,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){ .page.active{ animation:none } }
+
+.page-title{font-size:26px;font-weight:800;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.page-title::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--brand-grad)}
+.page-title-sub{font-size:13px;color:var(--text-muted);margin-bottom:20px;font-weight:500}
+.page-header-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-header-row .page-title{margin-bottom:0}
+.appt-header-row{align-items:center}
+#page-appointments .page-title{margin-bottom:14px}
+.page-header-actions{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.page-header-actions .custom-select-wrap{display:flex}
+.page-header-actions .custom-select-trigger{height:42px;padding-top:0;padding-bottom:0}
+.page-header-actions .btn-primary{height:42px;padding-top:0;padding-bottom:0}
+.page-header-actions .icon-btn{height:42px;width:42px;flex-shrink:0}
+
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:28px}
+.stat-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:22px 24px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 6px rgba(0,0,0,0.04),0 10px 24px rgba(var(--shadow-rgb),0.08);position:relative;overflow:hidden;transition:transform 260ms cubic-bezier(0.34,1.4,0.64,1),box-shadow 260ms ease,border-color 260ms ease}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brand-grad);opacity:.35;transition:opacity 220ms ease}
+.stat-card:hover{transform:translateY(-5px) scale(1.015);box-shadow:0 8px 16px rgba(0,0,0,0.06),0 18px 38px rgba(var(--shadow-rgb),0.18);border-color:rgba(var(--shadow-rgb),0.35)}
+.stat-card:hover::before{opacity:1}
+.stat-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);font-size:22px;flex-shrink:0;transition:transform 260ms cubic-bezier(0.34,1.56,0.64,1)}
+.stat-card:hover .stat-icon{transform:scale(1.1) rotate(-6deg)}
+.stat-icon.amber{background:linear-gradient(135deg,rgba(245,158,11,0.18),rgba(245,158,11,0.08));border-color:rgba(245,158,11,0.25);color:var(--stat-amber,#F59E0B)}
+.stat-icon.blue{background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(37,99,235,0.08));border-color:rgba(37,99,235,0.25);color:var(--stat-blue,#2563EB)}
+[data-theme="dark"] .stat-icon.amber{background:linear-gradient(135deg,rgba(251,191,36,0.22),rgba(251,191,36,0.10));border-color:rgba(251,191,36,0.30)}
+[data-theme="dark"] .stat-icon.blue{background:linear-gradient(135deg,rgba(96,165,250,0.22),rgba(96,165,250,0.10));border-color:rgba(96,165,250,0.30)}
+.stat-meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-value{font-size:28px;font-weight:800;color:var(--text);line-height:1.1}
+.stat-value.small{font-size:18px;line-height:1.2}
+.stat-value .badge{margin-left:8px;vertical-align:middle;font-size:10px;padding:2px 8px}
+@media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stat-grid{grid-template-columns:1fr}}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:15px;font-weight:700;color:var(--text)}
+
+.btn-primary{background:var(--brand-grad);color:#fff;border:none;border-radius:10px;padding:10px 20px;font:600 13px 'Poppins';box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.35);cursor:pointer;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1);display:inline-flex;align-items:center;gap:6px}
+.btn-primary i{transition:transform 220ms cubic-bezier(0.34,1.56,0.64,1)}
+.btn-primary:hover i{transform:scale(1.15) rotate(-6deg)}
+.btn-primary:active{transform:translateY(0) scale(0.98)}
+/* TASK 3: make Book Appointment stand out — bigger + gentle pulse */
+.appt-book-btn{padding:14px 26px !important;font-size:14.5px !important;gap:8px !important;animation:bookPulse 2.2s ease-in-out infinite}
+.appt-book-btn i{font-size:18px}
+.appt-book-btn:hover{animation-play-state:paused;transform:translateY(-1px)}
+@keyframes bookPulse{
+  0%,100%{box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.35),0 0 0 0 rgba(var(--shadow-rgb),0.45)}
+  50%{box-shadow:0 4px 18px rgba(var(--shadow-rgb),0.45),0 0 0 8px rgba(var(--shadow-rgb),0)}
+}
+.fab{animation:fabPulse 2.2s ease-in-out infinite}
+.fab:hover,.fab:active{animation-play-state:paused}
+@keyframes fabPulse{
+  0%,100%{box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.45),0 0 0 0 rgba(var(--shadow-rgb),0.5)}
+  50%{box-shadow:0 10px 32px rgba(var(--shadow-rgb),0.55),0 0 0 9px rgba(var(--shadow-rgb),0)}
+}
+.btn-primary:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.45)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--panel-bg);color:var(--text);border:1.5px solid var(--card-border-solid);border-radius:10px;padding:10px 20px;font:600 13px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1)}
+.btn-secondary:hover{background:color-mix(in srgb, var(--primary) 6%, var(--panel-bg));transform:translateY(-2px) scale(1.03);border-color:var(--primary)}
+.btn-secondary:active{transform:translateY(0) scale(0.98)}
+.btn-danger{background:rgba(239,68,68,0.10);color:var(--error);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:8px 16px;font:600 12px 'Poppins';cursor:pointer;transition:all 220ms cubic-bezier(0.34,1.4,0.64,1)}
+.btn-danger:hover{background:rgba(239,68,68,0.20);transform:translateY(-2px) scale(1.03)}
+.btn-danger:active{transform:translateY(0) scale(0.98)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.icon-btn.eye-btn{width:32px;height:32px;font-size:15px;color:var(--primary)}
+
+.table-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);overflow:hidden;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.table-scroll{overflow-x:auto;position:relative}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:rgba(var(--shadow-rgb),0.06);padding:12px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);font-weight:700;border-bottom:1.5px solid var(--card-border-solid);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--card-border-solid);color:var(--text);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+tr:last-child td{border-bottom:none}
+tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.6)}
+tbody tr:nth-child(even) td{background:rgba(16,185,129,0.04)}
+[data-theme="dark"] tbody tr:nth-child(odd) td{background:rgba(255,255,255,0.02)}
+[data-theme="dark"] tbody tr:nth-child(even) td{background:rgba(46,204,143,0.05)}
+td{transition:background 200ms ease}
+tbody tr:hover td{background:rgba(var(--shadow-rgb),0.08) !important}
+td.cell-id{font-family:'Poppins',monospace;font-weight:700;font-style:italic;color:var(--primary);font-size:12.5px;letter-spacing:.04em}
+td.cell-date{font-weight:700;font-style:italic;color:var(--text);letter-spacing:.03em}
+.pay-drugs{font-size:11.5px;color:var(--text-muted);margin-top:2px;white-space:normal;overflow-wrap:break-word;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:240px}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge.pending,.badge.unpaid{color:#F59E0B;background:rgba(245,158,11,0.12)}
+.badge.approved,.badge.active,.badge.paid{color:#1E8449;background:rgba(30,132,73,0.12)}
+.badge.cancelled,.badge.missed{color:#EF4444;background:rgba(239,68,68,0.12)}
+.badge.completed,.badge.dispensed,.badge.pending_verification{color:#2563EB;background:rgba(37,99,235,0.12)}
+
+.form-wrap{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;margin-bottom:24px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06)}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.form-field{display:flex;flex-direction:column;min-width:0}
+.form-field.full{grid-column:1 / -1}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;transition:border-color 180ms ease,box-shadow 180ms ease}
+.pw-field-wrap{position:relative;display:flex;align-items:center}
+.pw-field-wrap .form-input{padding-right:42px}
+.pw-toggle-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-muted);cursor:pointer;border-radius:8px;font-size:17px;transition:color 150ms ease,background 150ms ease}
+.pw-toggle-btn:hover{color:var(--primary);background:rgba(var(--shadow-rgb),0.08)}
+.pw-toggle-btn:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15);outline:none}
+.form-textarea{min-height:90px;resize:vertical}
+.checklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:12px;background:var(--input-bg);border:1.5px solid var(--input-border);border-radius:var(--radius-input)}
+.checklist-item{display:flex;align-items:center;gap:8px;font:500 13.5px 'Poppins',sans-serif;color:var(--text);cursor:pointer;user-select:none}
+.checklist-item input[type="checkbox"]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0}
+.checklist-other-wrap{grid-column:1/-1;margin-top:2px}
+.checklist-other-wrap input{width:100%;padding:9px 12px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 13.5px 'Poppins',sans-serif;display:none}
+.checklist-other-wrap input.show{display:block}
+.form-actions{margin-top:20px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.disclaimer{font-size:12px;color:var(--text-muted);font-style:italic;margin-top:12px}
+.form-input.is-invalid,.form-textarea.is-invalid,.custom-select-wrap.is-invalid .custom-select-trigger{border-color:var(--error) !important;background:var(--input-bg-err)}
+.field-error{font-size:11.5px;color:var(--error);margin-top:5px;font-weight:600;display:none}
+.field-error.show{display:block}
+.form-input.is-muted,.custom-select-wrap.is-muted .custom-select-trigger{background:rgba(148,163,184,0.10);color:var(--text-muted);cursor:not-allowed;opacity:.85}
+.form-input:disabled,.form-input[readonly]{background:rgba(148,163,184,0.10);color:var(--text-muted);cursor:not-allowed}
+
+.state-box{text-align:center;padding:48px 24px;color:var(--text-muted);font-size:14px}
+.state-box i{font-size:36px;display:block;margin-bottom:10px;color:var(--text-muted);opacity:.7}
+.state-box .cta{margin-top:14px}
+
+/* Skeleton shimmer */
+.sk{position:relative;overflow:hidden;background:rgba(148,163,184,0.14);border-radius:8px;display:inline-block}
+[data-theme="dark"] .sk{background:rgba(255,255,255,0.06)}
+.sk::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);animation:shimmer 1.4s infinite}
+[data-theme="dark"] .sk::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+/* TASK 4: faster, brighter glimmer variant for wizard doctor-loading step */
+.sk-glint::after{background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,0.85) 50%,transparent 80%);animation:glint 0.85s ease-in-out infinite}
+@keyframes glint{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.wiz-doc-sk{display:grid;gap:10px;padding:2px}
+.wiz-doc-sk-item{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);background:var(--neu-bg)}
+.wiz-doc-sk-item .sk-circle{width:34px;height:34px;border-radius:50%;flex-shrink:0}
+.sk-line{display:block;height:12px;border-radius:6px;margin:4px 0}
+.sk-stat{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:22px 24px;display:flex;align-items:center;gap:16px}
+.sk-stat .sk-circle{width:48px;height:48px;border-radius:14px}
+.sk-stat .sk-meta{flex:1}
+.sk-row{display:flex;gap:10px;padding:14px 16px;border-bottom:1px solid var(--card-border-solid)}
+.sk-row .sk-line{flex:1}
+.sk-rx{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:18px 22px;margin-bottom:12px}
+
+/* Slot cards */
+.slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:8px}
+.slot-card{background:var(--neu-bg);border:1.5px solid var(--card-border-solid);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all 180ms ease;position:relative}
+.slot-card:hover:not(.disabled){border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.15)}
+.slot-card.selected{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg));box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.20)}
+.slot-card.disabled{opacity:.5;cursor:not-allowed}
+.slot-date{font-weight:700;font-size:13px;color:var(--text)}
+.slot-shift{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.slot-spots{font-size:12px;color:var(--primary);font-weight:600;margin-top:2px}
+
+/* Prescription accordion */
+.rx-list{display:flex;flex-direction:column;gap:12px}
+.rx-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-left:4px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);overflow:hidden;transition:box-shadow 260ms ease,transform 260ms cubic-bezier(0.34,1.4,0.64,1)}
+.rx-card:hover{box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.10);transform:translateY(-2px)}
+.rx-card[data-status="active"]{border-left-color:var(--success)}
+.rx-card[data-status="dispensed"]{border-left-color:var(--info)}
+.rx-card[data-status="cancelled"]{border-left-color:var(--error)}
+.rx-card[data-status="pending"]{border-left-color:var(--warning,#F59E0B)}
+.rx-card.open{box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.12)}
+.rx-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 22px;cursor:pointer;flex-wrap:wrap}
+.rx-head-left{display:flex;align-items:center;gap:12px;min-width:0}
+.rx-head-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(13,107,78,0.10));border:1px solid rgba(var(--shadow-rgb),0.15);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.rx-head-txt{min-width:0}
+.rx-head-title{font-weight:700;font-size:14px;color:var(--text)}
+.rx-head-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.rx-head-right{display:flex;align-items:center;gap:10px}
+.rx-chevron{color:var(--text-muted);font-size:18px;transition:transform 260ms ease}
+.rx-card.open .rx-chevron{transform:rotate(180deg)}
+.rx-body{max-height:0;overflow:hidden;transition:max-height 320ms cubic-bezier(0.34,1.1,0.64,1);padding:0 22px}
+.rx-card.open .rx-body{max-height:1600px;padding-bottom:18px}
+.rx-items{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.rx-item{background:var(--neu-bg);border:1px solid var(--card-border-solid);border-radius:12px;padding:10px 14px;font-size:13px}
+.rx-item strong{color:var(--text);font-weight:700}
+.rx-item-instructions{display:flex;align-items:flex-start;gap:8px;color:var(--text)}
+.rx-item-instructions i{font-size:16px;color:var(--primary);flex-shrink:0;margin-top:1px}
+.rx-item-purchase{display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:11.5px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--card-border-solid)}
+.rx-item-purchase i{font-size:13px;flex-shrink:0}
+.rx-notice{margin-bottom:12px;padding:10px 14px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.22);border-radius:12px;color:var(--info);font-size:12.5px;display:flex;align-items:flex-start;gap:8px}
+
+/* Prescriptions sub-tabs (Transactions / Medical Instructions) */
+.subtab-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.subtab-btn{padding:9px 18px;border-radius:10px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font:600 13px 'Poppins';cursor:pointer;transition:all 180ms ease;display:inline-flex;align-items:center;gap:7px}
+.subtab-btn i{font-size:16px}
+.subtab-btn:hover{border-color:var(--primary);color:var(--text)}
+.subtab-btn.active{background:var(--brand-grad);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.30)}
+.subtab-panel{display:none}
+.subtab-panel.active{display:block}
+
+/* Medical instructions accordion (drug table per prescription) */
+.rx-med-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);overflow:hidden;margin-bottom:14px;transition:box-shadow 260ms ease,transform 260ms cubic-bezier(0.34,1.4,0.64,1)}
+.rx-med-card:hover{box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.10);transform:translateY(-2px)}
+.rx-med-card.open{box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.12)}
+.rx-med-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 22px;cursor:pointer;flex-wrap:wrap}
+.rx-med-title{font-weight:700;font-size:14px;color:var(--text)}
+.rx-med-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.rx-med-chevron{color:var(--text-muted);font-size:18px;transition:transform 260ms ease;flex-shrink:0}
+.rx-med-card.open .rx-med-chevron{transform:rotate(180deg)}
+.rx-med-body{max-height:0;overflow:hidden;transition:max-height 320ms cubic-bezier(0.34,1.1,0.64,1);padding:0 22px}
+.rx-med-card.open .rx-med-body{max-height:1600px;padding-bottom:20px}
+.rx-med-advice{margin-bottom:12px;padding:10px 14px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.22);border-radius:12px;color:var(--info);font-size:12.5px}
+[data-theme="dark"] .rx-med-advice{color:#93C5FD}
+.rx-med-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rx-med-table{width:100%;min-width:520px;font-size:13px;border-collapse:collapse}
+.rx-med-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);padding:8px 10px;border-bottom:1.5px solid var(--card-border-solid);white-space:nowrap}
+.rx-med-table td{padding:9px 10px;border-bottom:1px solid var(--card-border-solid);color:var(--text);white-space:nowrap}
+.rx-med-table tr:last-child td{border-bottom:none}
+.rx-med-drug{display:flex;align-items:center;gap:8px;min-width:0;max-width:220px}
+.rx-med-drug i{color:var(--primary);font-size:16px;flex-shrink:0}
+.rx-med-drug span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rx-med-table td{white-space:normal;overflow-wrap:break-word;word-break:break-word}
+.rx-med-title{min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;overflow-wrap:break-word;word-break:break-word}
+.rx-med-head > div:first-child{min-width:0;flex:1}
+.rx-med-sub{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rx-med-sub .rx-med-meta{display:inline-flex;align-items:center;gap:5px}
+.rx-med-sub .rx-med-meta i{color:var(--primary);font-size:14px}
+.rx-code-pill{font-family:'Poppins',ui-monospace,monospace;font-weight:700;font-size:11.5px;letter-spacing:.06em;color:var(--primary);background:rgba(var(--shadow-rgb),0.10);border:1px solid rgba(var(--shadow-rgb),0.22);border-radius:10px;padding:3px 10px;white-space:nowrap}
+/* Payments accordion (mirrors .rx-med-card pattern) */
+.pay-ac-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);overflow:hidden;margin-bottom:14px;transition:box-shadow 260ms ease,transform 260ms cubic-bezier(0.34,1.4,0.64,1)}
+.pay-ac-card:hover{box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.10);transform:translateY(-2px)}
+.pay-ac-card.open{box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.12)}
+.pay-ac-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 22px;cursor:pointer;flex-wrap:wrap}
+.pay-ac-head > div:first-child{min-width:0;flex:1}
+.pay-ac-title{min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;overflow-wrap:break-word;word-break:break-word}
+.pay-ac-amount{font-weight:800;font-size:16px;color:var(--text);margin-top:4px}
+.pay-ac-sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.pay-ac-chevron{color:var(--text-muted);font-size:18px;transition:transform 260ms ease;flex-shrink:0}
+.pay-ac-card.open .pay-ac-chevron{transform:rotate(180deg)}
+.pay-ac-body{max-height:0;overflow:hidden;transition:max-height 320ms cubic-bezier(0.34,1.1,0.64,1);padding:0 22px}
+.pay-ac-card.open .pay-ac-body{max-height:1200px;padding-bottom:20px}
+.pay-ac-rows{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px dashed var(--card-border-solid)}
+.pay-ac-row{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.pay-ac-row strong{color:var(--text-muted);font-weight:600;flex-shrink:0}
+.pay-ac-row span{color:var(--text);text-align:right;overflow-wrap:break-word;word-break:break-word;max-width:62%}
+.ac-clamp{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pay-ac-actions{margin-top:14px;display:flex;justify-content:flex-end}
+.rx-doc{display:inline-flex;align-items:center;gap:7px;min-width:0}
+.rx-doc-avatar{width:24px;height:24px;border-radius:999px;background:var(--brand-grad);color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(var(--shadow-rgb),0.30);letter-spacing:.02em}
+.rx-doc-name{font-weight:700;font-size:13.5px;color:var(--text);overflow-wrap:break-word;word-break:break-word}
+
+/* Overflow-safe container for long free text */
+.text-block{border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:11px 13px;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word;font-size:13px;line-height:1.5;color:var(--text);background:var(--panel-bg)}
+.text-block.clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-height:5.4em}
+.text-block-wrap{min-width:0;width:100%}
+.text-block-more{background:none;border:none;padding:4px 0 0;margin:0;font:700 12px 'Poppins',sans-serif;color:var(--primary);cursor:pointer;text-decoration:underline}
+.text-block-more:hover{opacity:.8}
+
+.pagination-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-wrap:wrap;gap:10px}
+.pagination-info{font-size:12px;color:var(--text-muted)}
+.pagination{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.page-pill{min-width:34px;height:34px;padding:0 10px;border-radius:10px;border:1.5px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text-muted);font:600 12px 'Poppins';cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 180ms ease}
+.page-pill:hover:not(:disabled){color:var(--text);transform:translateY(-1px)}
+.page-pill.active{background:var(--brand-grad);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.30)}
+.page-pill:disabled{opacity:.4;cursor:not-allowed}
+
+/* ============ TOASTS ============ */
+#toastContainer{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:520px;padding:16px 16px 0;box-sizing:border-box;pointer-events:none}
+:root{
+  --warn-ic:#F59E0B; --warn-tint:#FEF3E2; --warn-text:#7C4A03;
+  --info-ic:#2563EB; --info-tint:#E3EFFE; --info-text:#1E3A6E;
+  --succ-ic:#16A34A; --succ-tint:#E4F6EA; --succ-text:#14532D;
+  --err-ic:#EF4444;  --err-tint:#FDE9E9;  --err-text:#7A1F1F;
+}
+[data-theme="dark"]{
+  --warn-tint:#3A2C0E; --warn-text:#F5D48A;
+  --info-tint:#122644; --info-text:#AFCBFB;
+  --succ-tint:#123421; --succ-text:#9EE6BA;
+  --err-tint:#3A1616;  --err-text:#F7B4B4;
+}
+.toast{
+  background:var(--warn-tint);border-radius:16px;border:none;
+  box-shadow:0 8px 24px rgba(15,23,42,0.12);
+  padding:12px 44px 12px 14px;display:flex;gap:10px;align-items:center;position:relative;
+  opacity:0;transform:translateY(-120%);
+  transition:transform .55s cubic-bezier(0.34,1.56,0.64,1),opacity .25s;
+  pointer-events:auto;touch-action:none;cursor:grab;width:fit-content;max-width:100%
+}
+.toast.is-dragging{cursor:grabbing;transition:none !important}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.hide{opacity:0;transform:translateY(-120%)}
+.toast .toast-icon{width:26px;height:26px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0;background:var(--warn-ic)}
+.toast-text{font-weight:600;font-size:0.9rem;line-height:1.3;color:var(--warn-text);white-space:normal;overflow-wrap:break-word}
+.toast.t-info{background:var(--info-tint)}
+.toast.t-info .toast-icon{background:var(--info-ic)}
+.toast.t-info .toast-text{color:var(--info-text)}
+.toast.t-success{background:var(--succ-tint)}
+.toast.t-success .toast-icon{background:var(--succ-ic)}
+.toast.t-success .toast-text{color:var(--succ-text)}
+.toast.t-error{background:var(--err-tint)}
+.toast.t-error .toast-icon{background:var(--err-ic)}
+.toast.t-error .toast-text{color:var(--err-text)}
+.toast.t-warning .toast-text{color:var(--warn-text)}
+.toast-close{position:absolute;top:50%;right:12px;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;color:inherit;opacity:.5;font-size:14px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:10px}
+.toast-close:hover{opacity:.9;background:rgba(0,0,0,0.06)}
+@media(max-width:640px){
+  #toastContainer{padding:12px 12px 0;max-width:100%}
+  .toast{padding:10px 38px 10px 12px;gap:8px;width:100%}
+  .toast .toast-icon{width:24px;height:24px;font-size:13px}
+  .toast-text{font-size:0.84rem}
+}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.45);backdrop-filter:blur(10px);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 200ms ease;overflow-y:auto}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:24px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1);max-height:90dvh;overflow-y:auto;position:relative}
+
+/* ============= SCROLL EDGE GLASS-FADE ============= */
+/* Reusable fade overlay for scrollable containers: place a scroll-fade-wrap around
+   a scrollable element and add scroll-fade-top / scroll-fade-bottom pseudo-strips.
+   Uses backdrop-filter blur + a gradient fading to transparent, so content behind
+   the edge looks frosted/blurred rather than hard-clipped. Purely decorative:
+   pointer-events:none so it never blocks scrolling/clicks. */
+.scroll-fade-wrap{position:relative}
+.scroll-fade-wrap::before,
+.scroll-fade-wrap::after{
+  content:'';
+  position:absolute;
+  left:0; right:0;
+  height:32px;
+  pointer-events:none;
+  z-index:5;
+  opacity:0;
+  transition:opacity 200ms ease;
+  backdrop-filter:blur(6px) saturate(140%);
+  -webkit-backdrop-filter:blur(6px) saturate(140%);
+}
+.scroll-fade-wrap::before{
+  top:0;
+  border-radius:var(--radius-card) var(--radius-card) 0 0;
+  background:linear-gradient(to bottom, color-mix(in srgb, var(--panel-bg) 85%, transparent) 0%, transparent 100%);
+  mask-image:linear-gradient(to bottom, black 0%, transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom, black 0%, transparent 100%);
+}
+.scroll-fade-wrap::after{
+  bottom:0;
+  border-radius:0 0 var(--radius-card) var(--radius-card);
+  background:linear-gradient(to top, color-mix(in srgb, var(--panel-bg) 85%, transparent) 0%, transparent 100%);
+  mask-image:linear-gradient(to top, black 0%, transparent 100%);
+  -webkit-mask-image:linear-gradient(to top, black 0%, transparent 100%);
+}
+.scroll-fade-wrap.show-top::before{opacity:1}
+.scroll-fade-wrap.show-bottom::after{opacity:1}
+.modal-card:has(.custom-select-wrap.open){overflow:visible}
+.modal-card.wide{max-width:560px}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px}
+.modal-msg{font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.modal-branded-head{display:flex;align-items:center;gap:12px;padding-bottom:16px;margin-bottom:16px;border-bottom:2px dashed var(--card-border-solid)}
+.modal-branded-head .brand-icon{width:46px;height:46px}
+.modal-branded-head h3{font-size:16px;font-weight:800;color:var(--primary);margin:0;line-height:1.2}
+.modal-branded-head p{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+
+/* Complete Your Profile: branded head, scrollable body, sticky footer, edge fade */
+#completeProfileBd .modal-card{display:flex;flex-direction:column;padding:0;max-height:min(88dvh,720px)}
+#completeProfileBd .cp-head{display:flex;align-items:center;gap:12px;padding:20px 24px 16px;border-bottom:2px dashed var(--card-border-solid);flex:0 0 auto}
+#completeProfileBd .cp-head .brand-icon{width:46px;height:46px}
+#completeProfileBd .cp-head h3{font-size:16px;font-weight:800;color:var(--primary);margin:0;line-height:1.2;display:flex;align-items:center;gap:6px}
+#completeProfileBd .cp-head p{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+#completeProfileBd .cp-body{flex:1 1 auto;overflow-y:auto;padding:20px 24px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%)}
+#completeProfileBd .modal-actions{flex:0 0 auto;margin:0;padding:14px 24px;border-top:1.5px solid var(--card-border-solid);background:var(--panel-bg)}
+@media(min-width:769px){
+  #completeProfileBd .modal-card{max-width:520px}
+  #completeProfileBd .modal-card:has(.custom-select-wrap.open):has(.dob-wrap.open){max-height:min(94dvh,880px)}
+}
+@media(max-width:768px){
+  #completeProfileBd.modal-backdrop{align-items:flex-end;padding:0}
+  #completeProfileBd .modal-card{width:100%;max-width:none;border-radius:20px 20px 0 0;max-height:92dvh;animation:sheetUp 260ms cubic-bezier(0.32,0.72,0,1)}
+}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* Wizard */
+.wizard-progress{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
+.wiz-dot{width:10px;height:10px;border-radius:50%;background:var(--card-border-solid);transition:all 220ms ease}
+.wiz-dot.active{background:var(--brand-grad);width:28px;border-radius:6px;box-shadow:0 2px 8px rgba(var(--shadow-rgb),0.35)}
+.wiz-dot.done{background:var(--primary)}
+.wiz-step{display:none;animation:fadeUp 300ms ease}
+.wiz-step.active{display:block}
+.wiz-step h4{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.wiz-step h4 i{color:var(--primary);font-size:18px}
+.wiz-review{background:var(--neu-bg);border:1px solid var(--card-border-solid);border-radius:12px;padding:14px}
+.wiz-review .rvw-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;gap:12px}
+.wiz-review .rvw-row strong{color:var(--text-muted);font-weight:600}
+.wiz-review .rvw-row span{color:var(--text);font-weight:600;text-align:right}
+
+/* Receipt */
+.receipt-card{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:32px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.30);animation:popIn 280ms cubic-bezier(0.34,1.5,0.64,1);position:relative;overflow:hidden}
+.receipt-inner{position:relative;z-index:2}
+.receipt-head{text-align:center;margin-bottom:20px;padding-bottom:18px;border-bottom:2px dashed var(--card-border-solid)}
+.receipt-head .brand-icon{margin:0 auto 10px}
+.receipt-head h2{font-size:20px;font-weight:800;color:var(--primary);margin-bottom:4px}
+.receipt-head p{font-size:12px;color:var(--text-muted)}
+.receipt-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px;border-bottom:1px solid var(--card-border-solid);gap:12px}
+.receipt-row:last-of-type{border-bottom:none}
+.receipt-row strong{color:var(--text-muted);font-weight:600;flex-shrink:0}
+.receipt-row span{color:var(--text);font-weight:700;text-align:right;word-break:break-word}
+.receipt-amount{font-size:24px;font-weight:800;color:var(--primary);text-align:center;margin:20px 0 6px;padding:16px;background:rgba(16,185,129,0.08);border-radius:14px}
+
+.drawer-backdrop{position:fixed;inset:0;background:rgba(10,20,16,0.35);backdrop-filter:blur(10px);z-index:95;opacity:0;visibility:hidden;transition:opacity 280ms ease,visibility 280ms ease}
+.drawer-backdrop.open{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(86vw,320px);background:var(--panel-bg);border-left:1px solid var(--card-border);border-top-left-radius:24px;border-bottom-left-radius:24px;box-shadow:-20px 0 50px rgba(0,0,0,0.25);transform:translateX(110%);transition:transform 380ms cubic-bezier(0.34,1.2,0.64,1);z-index:96;display:flex;flex-direction:column;padding:24px}
+.drawer.open{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.drawer-nav{display:flex;flex-direction:column;gap:8px;padding:14px 4px;overflow-y:auto;flex:1}
+.drawer-nav .nav-item{justify-content:flex-start;width:100%;border-radius:10px;padding:12px 16px;min-height:0;font-size:14px;font-weight:500;background:var(--bg);border:none;color:var(--text);box-shadow:none;opacity:1 !important}
+.drawer-nav .nav-item:hover,.drawer-nav .nav-item.active{background:var(--brand-grad);color:#fff}
+.drawer-foot{padding-top:14px;border-top:1px solid var(--card-border-solid)}
+
+/* Custom select */
+.custom-select-wrap{position:relative;width:100%;font-family:'Poppins',sans-serif;z-index:1}
+.custom-select-wrap.open{z-index:100}
+.custom-select-trigger{width:100%;padding:11px 14px;background:var(--input-bg);color:var(--text);border:1.5px solid var(--input-border);border-radius:var(--radius-input);font:500 14px 'Poppins',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:border-color 180ms ease,box-shadow 180ms ease;text-align:left}
+.custom-select-trigger:hover{border-color:var(--primary)}
+.custom-select-wrap.open .custom-select-trigger{border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--shadow-rgb),0.15)}
+.custom-select-trigger .cs-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-select-trigger .cs-label.placeholder{color:var(--text-muted)}
+.custom-select-trigger .cs-caret{transition:transform 220ms ease;color:var(--text-muted);font-size:18px;flex-shrink:0}
+.custom-select-wrap.open .cs-caret{transform:rotate(180deg);color:var(--primary)}
+.custom-select-options{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.18);padding:6px;z-index:200;max-height:0;overflow:hidden;opacity:0;transform:translateY(-6px) scaleY(0.96);transform-origin:top center;transition:max-height 240ms cubic-bezier(0.34,1.2,0.64,1),opacity 200ms ease,transform 220ms cubic-bezier(0.34,1.2,0.64,1),padding 200ms ease;pointer-events:none}
+.custom-select-wrap.open .custom-select-options{max-height:280px;overflow-y:auto;opacity:1;transform:translateY(0) scaleY(1);pointer-events:auto}
+.cs-option{padding:10px 12px;border-radius:8px;font:500 13px 'Poppins',sans-serif;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background 140ms ease}
+.cs-option:hover,.cs-option.focused{background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg))}
+.cs-option.active{color:var(--primary);font-weight:700;background:color-mix(in srgb, var(--primary) 10%, var(--panel-bg))}
+.cs-option.disabled{color:var(--text-muted);cursor:not-allowed;opacity:.7}
+
+/* Custom calendar */
+.cal-input{cursor:pointer;position:relative}
+.cal-input i{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+.cal-popover{position:absolute;top:calc(100% + 6px);left:0;z-index:300;background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-input);box-shadow:0 20px 50px rgba(var(--shadow-rgb),0.20);padding:14px;width:290px;user-select:none;-webkit-user-select:none}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.cal-title{font-weight:700;font-size:13px;color:var(--text);flex:1;text-align:center}
+.cal-title-selects{display:flex;gap:6px;justify-content:center;align-items:center}
+.cal-jump{font:700 12px 'Poppins',sans-serif;color:var(--text);background:var(--neu-bg);border:1px solid var(--card-border-solid);border-radius:8px;padding:5px 6px;cursor:pointer;max-width:88px}
+.cal-jump-year{max-width:74px}
+.cal-jump:hover{border-color:var(--primary)}
+.cal-nav-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
+.cal-nav-btn:hover{background:color-mix(in srgb, var(--primary) 8%, var(--panel-bg))}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{font-size:10px;text-align:center;color:var(--text-muted);font-weight:700;text-transform:uppercase;padding:4px 0}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text);cursor:pointer;border-radius:8px;font-weight:500;border:1.5px solid transparent}
+.cal-day:hover:not(.disabled):not(.other){background:color-mix(in srgb, var(--primary) 10%, var(--panel-bg))}
+.cal-day.other{color:var(--text-muted);opacity:.4}
+.cal-day.today{border-color:var(--primary)}
+.cal-day.selected{background:var(--brand-grad);color:#fff;font-weight:700}
+.cal-day.focused{outline:2px solid var(--primary);outline-offset:1px}
+.cal-day.disabled{color:var(--text-muted);opacity:.35;cursor:not-allowed}
+.cal-foot{display:flex;justify-content:space-between;margin-top:10px;gap:8px}
+.cal-btn{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:10px;border:1px solid var(--card-border-solid);background:var(--neu-bg);color:var(--text);cursor:pointer}
+.cal-btn.primary{background:var(--brand-grad);color:#fff;border-color:transparent}
+
+/* ============= DOB SEGMENTED INPUT ============= */
+.dob-collapsed{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--input-border);border-radius:var(--radius-input);background:var(--input-bg);cursor:pointer;transition:border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;font:500 14px 'Poppins',sans-serif;color:var(--text)}
+.dob-collapsed:hover{border-color:var(--primary)}
+.dob-collapsed i.dob-cal-ico{color:var(--primary);font-size:18px}
+.dob-collapsed .dob-c-label{flex:1;color:var(--text)}
+.dob-collapsed .dob-c-label.placeholder{color:var(--text-muted);font-weight:400}
+.dob-collapsed i.dob-chev{color:var(--text-muted);font-size:16px;transition:transform 260ms ease}
+.dob-expanded{overflow:hidden;max-height:0;opacity:0;transform:translateY(-4px);transition:max-height 380ms cubic-bezier(0.34,1.1,0.64,1),opacity 260ms ease,transform 300ms ease}
+.dob-wrap.open .dob-expanded{max-height:220px;opacity:1;transform:translateY(0);margin-top:10px}
+.dob-wrap.open .dob-collapsed{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent)}
+.dob-wrap.open .dob-collapsed .dob-chev{transform:rotate(180deg)}
+.dob-boxes{display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:14px 4px 6px;flex-wrap:nowrap}
+.dob-box{width:58px;flex:1 1 58px;min-width:0;max-width:58px;height:64px;border:1.75px solid var(--input-border);border-radius:14px;background:var(--input-bg);text-align:center;font:700 22px 'Poppins',sans-serif;color:var(--text);letter-spacing:1px;transition:border-color 200ms ease, box-shadow 200ms ease, background 220ms ease, transform 200ms ease;outline:none;-moz-appearance:textfield}
+.dob-box.year{width:88px;flex:1.3 1 88px;max-width:88px}
+@media(max-width:380px){
+  .dob-boxes{gap:6px;padding:14px 2px 6px}
+  .dob-box{font-size:18px}
+}
+.dob-box::-webkit-outer-spin-button,.dob-box::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.dob-box:focus{border-color:var(--primary);box-shadow:0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);transform:translateY(-1px)}
+.dob-box.valid{border-color:var(--success);background:color-mix(in srgb, var(--success) 6%, var(--input-bg))}
+.dob-box.invalid{border-color:var(--error);background:var(--input-bg-err);animation:dobShake 380ms cubic-bezier(0.36,0.07,0.19,0.97)}
+.dob-sep{color:var(--text-muted);font:700 22px 'Poppins',sans-serif;user-select:none}
+.dob-readout{min-height:22px;padding:4px 6px 2px;font:600 13px 'Poppins',sans-serif;color:var(--primary);display:flex;align-items:center;gap:6px;opacity:0;transform:translateY(4px);transition:opacity 300ms ease, transform 320ms cubic-bezier(0.34,1.2,0.64,1)}
+.dob-readout.show{opacity:1;transform:translateY(0)}
+.dob-readout.err{color:var(--error)}
+.dob-readout i.check{color:var(--success);animation:dobPulse 900ms ease-in-out}
+@keyframes dobShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+@keyframes dobPulse{0%{transform:scale(0.6);opacity:0}60%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:1}}
+
+/* Drawer must cover FAB/book appointment button */
+body.drawer-open .fab{display:none !important}
+
+/* Upcoming appt card: don't wrap on mobile */
+.stat-card .stat-value.small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+
+/* Profile banner + accordion */
+.profile-banner{background:linear-gradient(135deg,rgba(16,185,129,0.14),rgba(13,107,78,0.08));border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);padding:28px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:0;margin-bottom:20px;box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.10)}
+.pb-avatar{width:88px;height:88px;border-radius:50%;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.30);flex-shrink:0}
+.pb-name{font-size:20px;font-weight:800;color:var(--text);margin-top:14px}
+.pb-email{font-size:13px;color:var(--text-muted);margin-top:4px;word-break:break-all}
+.profile-groups{display:flex;flex-direction:column;gap:16px}
+.profile-group{background:var(--panel-bg);border:1.5px solid var(--card-border-solid);border-radius:var(--radius-card);box-shadow:0 4px 14px rgba(var(--shadow-rgb),0.06);overflow:hidden}
+.pg-head{padding:16px 22px;display:flex;align-items:center;gap:10px;font-weight:700;color:var(--text);cursor:pointer;user-select:none}
+.pg-head i.pg-icon{color:var(--primary);font-size:18px}
+.pg-head .pg-chev{margin-left:auto;color:var(--primary);font-size:20px;font-weight:700;transition:transform 260ms ease}
+.profile-group.open .pg-chev{transform:rotate(180deg)}
+.pg-body{max-height:0;overflow:hidden;transition:max-height 320ms cubic-bezier(0.34,1.1,0.64,1);padding:0 22px}
+.profile-group.open .pg-body{max-height:1200px;padding-bottom:20px}
+.pg-save-actions{position:sticky;bottom:0;background:var(--panel-bg);padding-top:14px;padding-bottom:18px;margin-top:6px;z-index:1}
+@media(max-width:768px){
+  .pg-head{padding:14px 18px}
+}
+.profile-save-bar{position:sticky;bottom:0;background:var(--panel-bg);border-top:1px solid var(--card-border-solid);padding:14px 20px;display:none;justify-content:flex-end;margin:16px -16px -16px;border-radius:0 0 var(--radius-card) var(--radius-card)}
+@media(max-width:768px){
+  .profile-save-bar{display:flex;position:fixed;left:0;right:0;bottom:0;margin:0;z-index:80;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(var(--shadow-rgb),0.12)}
+  .desktop-save-actions{display:none}
+}
+
+/* FAB */
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:auto;height:auto;border-radius:10px;padding:14px 24px;background:var(--brand-grad);color:#fff;border:none;display:none;align-items:center;gap:8px;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.45);z-index:85;transition:transform 200ms ease}
+.fab:hover{transform:scale(1.05)}
+.fab.show{display:flex;animation:popIn 300ms cubic-bezier(0.34,1.5,0.64,1),fabPulse 2.2s ease-in-out 300ms infinite}
+
+.wiz-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:13px}
+
+@media (max-width: 768px){
+  .topnav-strip-wrapper{display:none}
+  .hamburger{display:flex}
+  .form-grid{grid-template-columns:1fr}
+  .topbar-shell{margin:8px 10px 0;padding-inline:0;max-width:none}
+  .main{padding:clamp(16px,4vw,32px);padding-top:var(--main-top-offset,90px);padding-bottom:100px}
+  .page-title{font-size:20px}
+  .brand-name{font-size:13px}
+  .desktop-book-btn{display:none}
+  .appt-filter{min-width:120px !important}
+  .welcome-highlight{font-size:16px;font-weight:700;color:var(--text);margin:2px 0 16px}
+}
+@media (min-width: 769px){
+  .fab{display:none !important}
+  .appt-header-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:nowrap}
+  .appt-header-actions{display:flex;gap:8px;align-items:stretch}
+  .appt-filter{min-width:140px !important}
+  .appt-welcome{display:none}
+  .appt-title-actions{display:none}
+
+  /* replace old two-tier topnav with the island sidebar; old strip stays in DOM but hidden on desktop */
+  .topnav-strip-wrapper{display:none !important}
+  .island{display:flex}
+  .main{ padding-left:calc(16px + var(--island-w-expanded) + 24px); padding-right:32px; max-width:none }
+}
+@media (max-width: 768px){
+  .island{ display:none !important }
+}
+@media (max-width: 480px){
+  .top-right .logout-btn span{display:none}
+}
+</style>
+</head>
+<body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="med-bg" id="medBg"></div>
+
+<div id="authScreen">
+  <div class="auth-logo-pulse" style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px;overflow:hidden"><img style="width:100%;height:100%;object-fit:contain;display:block" src="logo.png" alt="ATBU" /></div>
+  <div>Verifying session…</div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="layout">
+    <div class="topbar-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-icon"><img src="logo.png" alt="ATBU MediCare logo" /></div>
+          <div>
+            <div class="brand-name">ATBU MediCare</div>
+          </div>
+        </div>
+        <div class="top-right">
+          <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"><i class="ph ph-moon" id="themeIcon"></i></button>
+          <button class="logout-btn desktop-logout-btn" id="topbarLogoutBtn" aria-label="Sign out"><i class="ph ph-sign-out"></i> <span>Sign Out</span></button>
+          <button class="icon-btn hamburger" id="hamburgerBtn" title="Menu" aria-label="Open menu"><i class="ph ph-list"></i></button>
+        </div>
+      </header>
+    </div>
+
+    <div class="topnav-strip-wrapper" id="desktopNavWrapper" style="display:none">
+      <div class="topnav-strip-outer">
+        <nav class="topnav-strip" id="topnav"></nav>
+      </div>
+    </div>
+
+    <aside class="island" id="island" aria-label="Primary navigation">
+      <div class="island-profile">
+        <div class="island-avatar" id="islandAvatar">?</div>
+        <div class="island-profile-meta island-label">
+          <div class="island-profile-name" id="islandName">—</div>
+          <span class="island-profile-badge">Patient</span>
+        </div>
+      </div>
+      <div class="island-divider"></div>
+      <nav class="island-nav" id="islandNav"></nav>
+      <div class="island-divider"></div>
+      <div class="island-footer">
+        <div class="island-footer-glyph"><i class="ph-fill ph-users-three"></i></div>
+        <div class="island-footer-lines island-label">
+          <div>Team Tech Fusion</div>
+          <div>ATBU</div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <aside class="drawer" id="drawer">
+      <div class="drawer-head">
+        <div class="brand">
+          <div class="brand-icon"><img src="logo.png" alt="ATBU logo" /></div>
+          <div>
+            <div class="brand-name">ATBU MediCare</div>
+            <div class="brand-kicker">Patient Dashboard</div>
+          </div>
+        </div>
+        <button class="icon-btn" id="drawerCloseBtn" aria-label="Close menu"><i class="ph ph-x"></i></button>
+      </div>
+      <div><span class="drawer-title">Navigation</span></div>
+      <nav class="drawer-nav" id="drawerNav"></nav>
+      <div class="drawer-foot">
+        <button class="logout-btn" id="drawerLogoutBtn" style="justify-content:center;width:100%;padding:12px" aria-label="Sign out"><i class="ph ph-sign-out"></i> Log Out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-title-sub" id="welcomeMsg">Welcome back.</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="icon-btn" id="dashRefreshBtn" title="Refresh" aria-label="Refresh dashboard"><i class="ph ph-arrows-clockwise" id="dashRefreshIcon"></i></button>
+          </div>
+        </div>
+        <div class="stat-grid" id="statGrid"></div>
+      </div>
+
+      <!-- APPOINTMENTS -->
+      <div class="page" id="page-appointments">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">My Appointments</div>
+            <div class="page-title-sub" id="apptWelcomeMsg">Welcome back.</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="icon-btn" id="apptRefreshBtn" title="Refresh" aria-label="Refresh appointments"><i class="ph ph-arrows-clockwise"></i></button>
+          </div>
+        </div>
+        <div class="page-header-row appt-header-row">
+          <button class="btn-primary desktop-book-btn appt-book-btn" id="openBookWizard"><i class="ph-fill ph-plus-circle"></i> Book Appointment</button>
+          <div class="page-header-actions appt-header-actions">
+            <div id="apptFilter" class="custom-select-wrap cs-filter appt-filter" data-cs data-cs-default="all" style="min-width:180px"></div>
+          </div>
+        </div>
+        <div id="apptTableWrap"></div>
+        <div class="pagination-wrap"><div class="pagination-info" id="apptPagInfo"></div><div class="pagination" id="apptPag"></div></div>
+      </div>
+
+      <!-- PRESCRIPTIONS -->
+      <div class="page" id="page-prescriptions">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">My Prescriptions</div>
+            <div class="page-title-sub" id="rxWelcomeMsg">Welcome back.</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="icon-btn" id="rxRefreshBtn" title="Refresh" aria-label="Refresh prescriptions"><i class="ph ph-arrows-clockwise"></i></button>
+          </div>
+        </div>
+        <div class="subtab-row">
+          <button class="subtab-btn active" data-subtab="transactions"><i class="ph-fill ph-receipt"></i> Transactions</button>
+          <button class="subtab-btn" data-subtab="medical"><i class="ph-fill ph-clipboard-text"></i> Medical Instructions</button>
+        </div>
+        <div class="subtab-panel active" id="subtab-transactions">
+          <div id="rxTransactionsWrap"></div>
+        </div>
+        <div class="subtab-panel" id="subtab-medical">
+          <div id="rxMedicalWrap" style="position:relative;min-height:120px"></div>
+        </div>
+      </div>
+
+      <!-- PAYMENTS -->
+      <div class="page" id="page-payments">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">Payments</div>
+            <div class="page-title-sub" id="payWelcomeMsg">Welcome back.</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="icon-btn" id="payRefreshBtn" title="Refresh" aria-label="Refresh payments"><i class="ph ph-arrows-clockwise"></i></button>
+          </div>
+        </div>
+        <div class="page-header-row">
+          <div></div>
+          <div class="page-header-actions">
+            <div id="payFilter" class="custom-select-wrap cs-filter" data-cs data-cs-default="all" style="min-width:200px"></div>
+          </div>
+        </div>
+        <div id="payTableWrap"></div>
+        <div class="pagination-wrap"><div class="pagination-info" id="payPagInfo"></div><div class="pagination" id="payPag"></div></div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="page" id="page-profile">
+        <div class="page-header-row">
+          <div>
+            <div class="page-title">My Profile</div>
+            <div class="page-title-sub" id="profWelcomeMsg">Welcome back.</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="icon-btn" id="profRefreshBtn" title="Refresh" aria-label="Refresh profile"><i class="ph ph-arrows-clockwise"></i></button>
+          </div>
+        </div>
+        <div id="profileBanner"></div>
+        <form id="profileForm" novalidate>
+          <div class="profile-groups">
+            <div class="profile-group" data-pg>
+              <div class="pg-head"><i class="ph-fill ph-user pg-icon"></i> Personal Info <i class="ph-bold ph-caret-down pg-chev"></i></div>
+              <div class="pg-body">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-input" id="profName" />
+                    <div class="field-error" data-err="profName">Please enter your full name.</div>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Date of Birth</label>
+                    <div id="profDob" class="dob-wrap"></div>
+                    <div class="field-error" data-err="profDob">Please select your date of birth.</div>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Gender</label>
+                    <div id="gender" class="custom-select-wrap is-muted" data-cs data-cs-placeholder="—"></div>
+                  </div>
+                </div>
+                <div class="form-actions pg-save-actions">
+                  <button type="button" class="btn-primary btn" id="profSavePersonalBtn" data-save-section="personal"><i class="btn-icon ph-fill ph-floppy-disk"></i> <span class="btn-text">Save</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+            <div class="profile-group" data-pg>
+              <div class="pg-head"><i class="ph-fill ph-phone pg-icon"></i> Contact <i class="ph-bold ph-caret-down pg-chev"></i></div>
+              <div class="pg-body">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input is-muted" id="profEmail" disabled readonly />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-input" id="profPhone" />
+                    <div class="field-error" data-err="profPhone">Please enter a valid phone number.</div>
+                  </div>
+                </div>
+                <div class="form-actions pg-save-actions">
+                  <button type="button" class="btn-primary btn" id="profSaveContactBtn" data-save-section="contact"><i class="btn-icon ph-fill ph-floppy-disk"></i> <span class="btn-text">Save</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+            <div class="profile-group" data-pg>
+              <div class="pg-head"><i class="ph-fill ph-map-pin pg-icon"></i> Address <i class="ph-bold ph-caret-down pg-chev"></i></div>
+              <div class="pg-body">
+                <div class="form-grid">
+                  <div class="form-field full">
+                    <label class="form-label">Address</label>
+                    <textarea class="form-textarea" id="profAddress"></textarea>
+                    <div class="field-error" data-err="profAddress">Please enter your address.</div>
+                  </div>
+                </div>
+                <div class="form-actions pg-save-actions">
+                  <button type="button" class="btn-primary btn" id="profSaveAddressBtn" data-save-section="address"><i class="btn-icon ph-fill ph-floppy-disk"></i> <span class="btn-text">Save</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+            <div class="profile-group" data-pg>
+              <div class="pg-head"><i class="ph-fill ph-lock-key pg-icon"></i> Security <i class="ph-bold ph-caret-down pg-chev"></i></div>
+              <div class="pg-body">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label">Current Password</label>
+                    <div class="pw-field-wrap">
+                      <input type="password" class="form-input" id="secCurrentPw" autocomplete="current-password" />
+                      <button type="button" class="pw-toggle-btn" data-target="secCurrentPw" aria-label="Show password"><i class="ph ph-eye"></i></button>
+                    </div>
+                    <div class="field-error" data-err="secCurrentPw">Please enter your current password.</div>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">New Password</label>
+                    <div class="pw-field-wrap">
+                      <input type="password" class="form-input" id="secNewPw" autocomplete="new-password" />
+                      <button type="button" class="pw-toggle-btn" data-target="secNewPw" aria-label="Show password"><i class="ph ph-eye"></i></button>
+                    </div>
+                    <div class="field-error" data-err="secNewPw">Please enter a new password.</div>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Confirm New Password</label>
+                    <div class="pw-field-wrap">
+                      <input type="password" class="form-input" id="secConfirmPw" autocomplete="new-password" />
+                      <button type="button" class="pw-toggle-btn" data-target="secConfirmPw" aria-label="Show password"><i class="ph ph-eye"></i></button>
+                    </div>
+                    <div class="field-error" data-err="secConfirmPw">Passwords do not match.</div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn-primary btn" id="secChangePwBtn"><i class="btn-icon ph-fill ph-lock-key"></i> <span class="btn-text">Change Password</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+            <div class="profile-group" data-pg>
+              <!-- TASK 1: Medical Records accordion (patient-editable, doctor read-only) -->
+              <div class="pg-head"><i class="ph-fill ph-heartbeat pg-icon"></i> Medical Records <i class="ph-bold ph-caret-down pg-chev"></i></div>
+              <div class="pg-body">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label">Genotype</label>
+                    <div id="medGenotype" class="custom-select-wrap" data-cs-placeholder="Select genotype"></div>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Blood Group</label>
+                    <div id="medBloodGroup" class="custom-select-wrap" data-cs-placeholder="Select blood group"></div>
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Allergies</label>
+                    <div class="checklist" id="medAllergiesList"></div>
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Chronic Conditions</label>
+                    <div class="checklist" id="medChronicList"></div>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Emergency Contact Name</label>
+                    <input type="text" class="form-input" id="medEmName" placeholder="Full name" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Emergency Contact Number</label>
+                    <input type="tel" class="form-input" id="medEmPhone" placeholder="Phone number" />
+                  </div>
+                </div>
+                <div class="form-actions pg-save-actions">
+                  <button type="button" class="btn-primary btn" id="profSaveMedicalBtn" data-save-section="medical"><i class="btn-icon ph-fill ph-floppy-disk"></i> <span class="btn-text">Save</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>
+
+<button class="fab" id="fabBook" aria-label="Book new appointment"><i class="ph-bold ph-plus"></i> Book Appointment</button>
+
+<div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const SUPABASE_URL = 'https://qseuseqkzvnlqsartkoq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzZXVzZXFrenZubHFzYXJ0a29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjcwMTcsImV4cCI6MjA5OTIwMzAxN30.49UXm0BhbHy6oEAYRTJjddiRB3VsrVg-jkgmAa2fEH4'
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const LOGO_SRC = 'logo.png'
+
+let currentUser = null
+let currentProfile = null
+let hasPasswordAuth = false
+const PAGE_SIZE = 10
+let apptPage = 1, apptFilter = 'all'
+let payPage = 1, payFilter = 'all'
+let rxCache = []
+
+/* Medical falling icons */
+function initMedBg(){
+  const box = document.getElementById('medBg')
+  const icons = ['ph-pill','ph-first-aid','ph-syringe','ph-heartbeat','ph-plus','ph-cross','ph-stethoscope','ph-thermometer']
+  const N = 22
+  let html = ''
+  for (let i=0;i<N;i++){
+    const ic = icons[Math.floor(Math.random()*icons.length)]
+    const left = Math.random()*100
+    const dur = 18 + Math.random()*22
+    const delay = -Math.random()*dur
+    const size = 18 + Math.random()*24
+    const op = 0.08 + Math.random()*0.07
+    html += `<i class="ph-fill ${ic}" style="left:${left}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:${delay}s;opacity:${op}"></i>`
+  }
+  box.innerHTML = html
+}
+function injectReceiptMedBg(container){
+  const icons = ['ph-pill','ph-first-aid','ph-plus','ph-heartbeat','ph-cross','ph-syringe']
+  const bg = document.createElement('div')
+  bg.className = 'receipt-med-bg'
+  let html=''
+  for (let i=0;i<10;i++){
+    const ic = icons[Math.floor(Math.random()*icons.length)]
+    const left = Math.random()*100
+    const dur = 16 + Math.random()*18
+    const delay = -Math.random()*dur
+    const size = 16 + Math.random()*18
+    html += `<i class="ph-fill ${ic}" style="left:${left}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:${delay}s"></i>`
+  }
+  bg.innerHTML = html
+  container.prepend(bg)
+}
+
+/* =============== NAV =============== */
+const NAV_ITEMS = [
+  { tab:'dashboard',     label:'Dashboard',     icon:'ph-squares-four' },
+  { tab:'appointments',  label:'Appointments',  icon:'ph-calendar-check' },
+  { tab:'prescriptions', label:'Prescriptions', icon:'ph-prescription' },
+  { tab:'payments',      label:'Payments',      icon:'ph-currency-ngn' },
+  { tab:'profile',       label:'My Profile',    icon:'ph-user-circle' },
+]
+function renderNav(){
+  const top = document.getElementById('topnav')
+  const drw = document.getElementById('drawerNav')
+  const html = NAV_ITEMS.map((n,i) => `<button class="nav-item ${i===0?'active':''}" data-tab="${n.tab}" aria-label="${n.label}"><i class="ph ${n.icon}"></i> ${n.label}</button>`).join('')
+  top.innerHTML = html; drw.innerHTML = html
+  document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', () => switchTab(el.dataset.tab)))
+
+  const island = document.getElementById('islandNav')
+  if (island){
+    island.innerHTML = NAV_ITEMS.map((n,i) => `<button class="island-nav-item ${i===0?'active':''}" data-tab="${n.tab}" aria-label="${n.label}" data-tooltip="${n.label}"><i class="ph ${n.icon}"></i><span class="island-label">${n.label}</span></button>`).join('')
+    island.querySelectorAll('.island-nav-item').forEach(el => el.addEventListener('click', () => switchTab(el.dataset.tab)))
+    wireIslandTooltips(island)
+  }
+}
+
+function wireIslandTooltips(island){
+  return
+  let tip = document.getElementById('islandTooltip')
+  if (!tip){
+    tip = document.createElement('div')
+    tip.id = 'islandTooltip'
+    tip.className = 'island-tooltip'
+    document.body.appendChild(tip)
+  }
+  const show = (el) => {
+    const label = el.dataset.tooltip
+    if (!label) return
+    const r = el.getBoundingClientRect()
+    tip.textContent = label
+    tip.style.left = (r.right + 12) + 'px'
+    tip.style.top = (r.top + r.height / 2) + 'px'
+    tip.classList.add('show')
+  }
+  const hide = () => tip.classList.remove('show')
+  island.querySelectorAll('.island-nav-item[data-tooltip]').forEach(el => {
+    el.addEventListener('mouseenter', () => show(el))
+    el.addEventListener('mouseleave', hide)
+    el.addEventListener('focus', () => show(el))
+    el.addEventListener('blur', hide)
+    el.addEventListener('click', hide)
+  })
+}
+
+function updateIslandProfile(){
+  const nameEl = document.getElementById('islandName')
+  const avatarEl = document.getElementById('islandAvatar')
+  if (!nameEl || !avatarEl) return
+  const name = currentProfile?.full_name || ''
+  nameEl.textContent = name || 'Patient'
+  avatarEl.textContent = initials(name || '?')
+}
+
+/* =============== HELPERS =============== */
+function escHtml(s){ if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function emptyIcon(){ return '<i class="ph ph-minus" style="color:var(--text-muted);opacity:.4"></i>' }
+function formatDate(d){ if(!d) return '—'; const dt=new Date(d); if(isNaN(dt)) return escHtml(d); return dt.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) }
+function initialsOf(name){
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return 'DR'
+  if (parts.length === 1) return parts[0].slice(0,2).toUpperCase()
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+}
+function formatDateTime(d){ if(!d) return '—'; const dt=new Date(d); if(isNaN(dt)) return escHtml(d); return dt.toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) }
+function formatCurrency(n){ const v = Number(n||0); return '₦' + v.toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function badge(status){ if(!status) return emptyIcon(); const s = String(status).toLowerCase(); return `<span class="badge ${escHtml(s)}">${escHtml(s.replace(/_/g,' '))}</span>` }
+// 4-state prescription fulfillment badge: unpaid, pending_verification, paid (not dispensed), dispensed
+function rxStatusBadge(state){
+  const labels = { unpaid:'Unpaid', pending_verification:'Pending Verification', paid:'Paid — Not Dispensed', dispensed:'Dispensed' }
+  return `<span class="badge ${escHtml(state.key)}">${escHtml(labels[state.key] || state.key)}</span>`
+}
+function initials(name){ if(!name) return '?'; return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase() }
+function isNetworkError(err){
+  if (!err) return false
+  const m = (err.message || String(err)).toLowerCase()
+  return m.includes('failed to fetch') || m.includes('networkerror') || m.includes('load failed') || !navigator.onLine
+}
+function handleErr(err, fallback='Something went wrong'){
+  if (isNetworkError(err)){ showToast('error','Check your internet connection'); return }
+  showToast('error', err?.message || fallback)
+}
+
+function buildTable(columns, rows, opts={}){
+  if (!rows || rows.length === 0) return `<div class="state-box"><i class="ph-fill ph-tray"></i>${opts.emptyText||'No records yet.'}</div>`
+  const thead = '<thead><tr>' + columns.map(c => `<th>${escHtml(c.label)}</th>`).join('') + '</tr></thead>'
+  const tbody = '<tbody>' + rows.map(r => '<tr>' + columns.map(c => {
+    let v = c.render ? c.render(r) : (c.badge ? badge(r[c.key]) : escHtml(r[c.key]))
+    return `<td${c.cellClass?' class="'+c.cellClass+'"':''}>${v}</td>`
+  }).join('') + '</tr>').join('') + '</tbody>'
+  return `<table>${thead}${tbody}</table>`
+}
+
+function buildPagination(pagEl, infoEl, currentPage, pageSize, totalCount, loadFn){
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+  const from = totalCount === 0 ? 0 : (currentPage-1)*pageSize + 1
+  const to = Math.min(currentPage*pageSize, totalCount)
+  infoEl.textContent = totalCount === 0 ? 'No results' : `Showing ${from}–${to} of ${totalCount}`
+  let html = `<button class="page-pill" ${currentPage===1?'disabled':''} data-p="${currentPage-1}" aria-label="Previous page"><i class="ph ph-caret-left"></i></button>`
+  const maxShow = 5; let start = Math.max(1, currentPage - 2); let end = Math.min(totalPages, start + maxShow - 1); start = Math.max(1, end - maxShow + 1)
+  for (let i = start; i <= end; i++) html += `<button class="page-pill ${i===currentPage?'active':''}" data-p="${i}">${i}</button>`
+  html += `<button class="page-pill" ${currentPage===totalPages?'disabled':''} data-p="${currentPage+1}" aria-label="Next page"><i class="ph ph-caret-right"></i></button>`
+  pagEl.innerHTML = html
+  pagEl.querySelectorAll('.page-pill[data-p]').forEach(btn => btn.addEventListener('click', () => {
+    const p = parseInt(btn.dataset.p,10); if (!isNaN(p) && p >= 1 && p <= totalPages) loadFn(p)
+  }))
+}
+
+/* Skeleton builders */
+function skStatGrid(n=4){ let h=''; for(let i=0;i<n;i++) h+=`<div class="sk-stat"><div class="sk sk-circle"></div><div class="sk-meta"><span class="sk sk-line" style="width:60%"></span><span class="sk sk-line" style="width:40%;height:18px"></span></div></div>`; return h }
+function skTable(rows=5){
+  let h='<table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>'
+  for(let i=0;i<rows;i++) h+=`<tr><td><span class="sk sk-line" style="width:70px"></span></td><td><span class="sk sk-line" style="width:120px"></span></td><td><span class="sk sk-line" style="width:80px"></span></td><td><span class="sk sk-line" style="width:60px"></span></td></tr>`
+  h+='</tbody></table>'; return h
+}
+function skRxList(n=3){ let h=''; for(let i=0;i<n;i++) h+=`<div class="sk-rx"><span class="sk sk-line" style="width:40%;height:14px"></span><span class="sk sk-line" style="width:60%"></span></div>`; return h }
+/* =============== TOAST =============== */
+function showToast(type, message){
+  const duration = type === 'error' ? 6000 : 4000
+  const wrap = document.getElementById('toastContainer')
+  const t = document.createElement('div')
+  t.className = `toast t-${type}`
+  const icons = { success:'ph-check', error:'ph-x', info:'ph-info', warning:'ph-warning' }
+  const ic = icons[type] || icons.info
+  t.innerHTML = `<div class="toast-icon"><i class="ph-bold ${ic}"></i></div><div class="toast-text">${escHtml(message)}</div><button class="toast-close" aria-label="Close"><i class="ph ph-x"></i></button>`
+  wrap.appendChild(t)
+  requestAnimationFrame(() => t.classList.add('show'))
+
+  const dismiss = () => { t.classList.add('hide'); setTimeout(() => t.remove(), 300) }
+  t.querySelector('.toast-close').addEventListener('click', dismiss)
+  let autoTimer = setTimeout(dismiss, duration)
+
+  const DISMISS_THRESHOLD = 80
+  let startX = 0, startY = 0, curX = 0, curY = 0, dragging = false
+
+  function onDragStart(x, y){
+    startX = x; startY = y; curX = 0; curY = 0
+    dragging = true
+    clearTimeout(autoTimer)
+    t.classList.add('is-dragging')
+    t.style.transition = 'none'
+  }
+  function onDragMove(x, y){
+    if (!dragging) return
+    curX = x - startX; curY = y - startY
+    const effY = Math.min(curY, 0)
+    const dist = Math.hypot(curX, effY)
+    const opacity = Math.max(0, 1 - dist / (DISMISS_THRESHOLD * 1.5))
+    t.style.transform = `translate(${curX}px, ${curY}px)`
+    t.style.opacity = opacity
+  }
+  function onDragEnd(){
+    if (!dragging) return
+    dragging = false
+    const effY = Math.min(curY, 0)
+    const dist = Math.hypot(curX, effY)
+    if (dist >= DISMISS_THRESHOLD){
+      const scale = 2.5
+      t.style.transition = 'transform 250ms ease, opacity 200ms ease'
+      t.style.transform = `translate(${curX*scale}px, ${curY*scale}px)`
+      t.style.opacity = '0'
+      setTimeout(() => t.remove(), 260)
+    } else {
+      t.style.transition = 'transform 320ms cubic-bezier(0.34,1.56,0.64,1), opacity 200ms ease'
+      t.style.transform = 'translate(0,0)'
+      t.style.opacity = '1'
+      t.classList.remove('is-dragging')
+      autoTimer = setTimeout(dismiss, 3000)
+    }
+  }
+  t.addEventListener('mousedown', e => {
+    if (e.target.closest('.toast-close')) return
+    onDragStart(e.clientX, e.clientY)
+    const onMove = ev => onDragMove(ev.clientX, ev.clientY)
+    const onUp = () => { onDragEnd(); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  })
+  t.addEventListener('touchstart', e => {
+    if (e.target.closest('.toast-close')) return
+    const touch = e.touches[0]
+    onDragStart(touch.clientX, touch.clientY)
+  }, {passive:true})
+  t.addEventListener('touchmove', e => {
+    const touch = e.touches[0]
+    onDragMove(touch.clientX, touch.clientY)
+    e.preventDefault()
+  }, {passive:false})
+  t.addEventListener('touchend', onDragEnd)
+  t.addEventListener('touchcancel', onDragEnd)
+}
+
+/* =============== CONFIRM =============== */
+function showConfirm(title, message, confirmLabel='Confirm'){
+  return new Promise(resolve => {
+    const bd = document.createElement('div')
+    bd.className = 'modal-backdrop'
+    bd.innerHTML = `<div class="modal-card"><div class="modal-title">${escHtml(title)}</div><div class="modal-msg">${escHtml(message)}</div><div class="modal-actions"><button class="btn-secondary" data-act="cancel">Cancel</button><button class="btn-danger" data-act="ok" style="padding:10px 20px;font-size:13px">${escHtml(confirmLabel)}</button></div></div>`
+    document.body.appendChild(bd)
+    const close = v => { bd.remove(); resolve(v) }
+    bd.addEventListener('click', e => { if (e.target === bd) close(false) })
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false))
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => close(true))
+  })
+}
+function showInfoModal(title, htmlBody){
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.innerHTML = `<div class="modal-card"><div class="modal-title">${escHtml(title)}</div><div class="modal-msg">${htmlBody}</div><div class="modal-actions"><button class="btn-primary" data-act="close">Close</button></div></div>`
+  document.body.appendChild(bd)
+  const close = () => bd.remove()
+  bd.addEventListener('click', e => { if (e.target === bd) close() })
+  bd.querySelector('[data-act="close"]').addEventListener('click', close)
+}
+
+/* Overflow-safe block for long free text. Clamps tall content and offers a
+   "See more" button that opens the existing showInfoModal with the full text. */
+function textBlockHtml(text, modalTitle='Details'){
+  const t = (text == null ? '' : String(text)).trim()
+  if (!t) return '<div class="text-block"><em style="color:var(--text-muted)">—</em></div>'
+  const long = t.length > 160 || t.split('\n').length > 3
+  const id = 'tb_' + Math.random().toString(36).slice(2, 9)
+  TEXT_BLOCK_STORE[id] = { text: t, title: modalTitle }
+  return `<div class="text-block-wrap"><div class="text-block${long ? ' clamped' : ''}">${escHtml(t)}</div>${long ? `<button type="button" class="text-block-more" data-text-block="${id}">See more</button>` : ''}</div>`
+}
+const TEXT_BLOCK_STORE = {}
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-text-block]')
+  if (!btn) return
+  const entry = TEXT_BLOCK_STORE[btn.dataset.textBlock]
+  if (!entry) return
+  showInfoModal(entry.title, `<div style="white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word;color:var(--text);font-size:13.5px;line-height:1.6;max-height:60dvh;overflow-y:auto">${escHtml(entry.text)}</div>`)
+})
+
+/* =============== COMPLETE PROFILE (Google signups) =============== */
+// Mandatory, non-dismissible modal that collects the fields Google OAuth
+// does not provide, then inserts the patients row via the
+// complete_patient_profile RPC. Resolves with the freshly inserted row.
+function showCompleteProfileModal(user){
+  return new Promise((resolve, reject) => {
+    const meta = (user && user.user_metadata) || {}
+    const prefillName = meta.full_name || meta.name || ''
+    const bd = document.createElement('div')
+    bd.className = 'modal-backdrop'
+    bd.id = 'completeProfileBd'
+    // Non-dismissible: no close button, no backdrop click, no Escape key.
+    bd.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cpTitle">
+      <div class="cp-head">
+        <div class="brand-icon"><img src="${LOGO_SRC}" alt="ATBU logo" /></div>
+        <div><h3 id="cpTitle"><i class="ph-fill ph-user-focus"></i> Complete Your Profile</h3><p>ATBU MediCare</p></div>
+      </div>
+      <div class="cp-body">
+      <div class="modal-msg">A few more details are needed before you can access your dashboard.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:6px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Full Name</label>
+          <input type="text" class="form-input" id="cpName" autocomplete="name" />
+          <div class="field-error" data-err="cpName">Please enter your full name.</div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Phone</label>
+          <input type="tel" class="form-input" id="cpPhone" autocomplete="tel" />
+          <div class="field-error" data-err="cpPhone">Please enter a valid phone number.</div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Date of Birth</label>
+          <div id="cpDob" class="dob-wrap"></div>
+          <div class="field-error" data-err="cpDob">Please select your date of birth.</div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Gender</label>
+          <div id="cpGender" class="custom-select-wrap" data-cs-placeholder="Select gender…"></div>
+          <div class="field-error" data-err="cpGender">Please select your gender.</div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Address</label>
+          <textarea class="form-textarea" id="cpAddress" autocomplete="street-address"></textarea>
+          <div class="field-error" data-err="cpAddress">Please enter your address.</div>
+        </div>
+        <div class="field-error" data-err="cpSubmit" style="text-align:center"></div>
+      </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary btn" data-act="submit" style="width:100%;justify-content:center"><i class="btn-icon ph ph-check-circle"></i> <span class="btn-text">Save &amp; Continue</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+      </div>
+    </div>`
+    document.body.appendChild(bd)
+    // Block backdrop-click and Escape-key dismissal.
+    bd.addEventListener('click', e => { e.stopPropagation() })
+    const trapEsc = e => { if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation() } }
+    document.addEventListener('keydown', trapEsc, true)
+
+    document.getElementById('cpName').value = prefillName
+    initDobInput('cpDob', { onChange:()=>{ document.querySelector('[data-err="cpDob"]').classList.remove('show') } })
+    initCS('cpGender', [{value:'male',label:'Male'},{value:'female',label:'Female'}], {
+      onChange:()=>{ document.querySelector('[data-err="cpGender"]').classList.remove('show') }
+    })
+
+    const btn = bd.querySelector('[data-act="submit"]')
+    btn.addEventListener('click', async () => {
+      const full_name = document.getElementById('cpName').value.trim()
+      const phone = document.getElementById('cpPhone').value.trim()
+      const dob = dobGetValue('cpDob') || null
+      const gender = getCS('cpGender')
+      const address = document.getElementById('cpAddress').value.trim()
+      let ok = true
+      ok = setInvalid('cpName','cpName', !full_name) && ok
+      ok = setInvalid('cpPhone','cpPhone', !phone || phone.length < 7) && ok
+      const dobErr = document.querySelector('[data-err="cpDob"]')
+      if (!dob){ dobErr.classList.add('show'); ok = false } else dobErr.classList.remove('show')
+      const genderErr = document.querySelector('[data-err="cpGender"]')
+      const genderWrap = document.getElementById('cpGender')
+      if (!gender){ genderErr.classList.add('show'); if (genderWrap) genderWrap.classList.add('is-invalid'); ok = false }
+      else { genderErr.classList.remove('show'); if (genderWrap) genderWrap.classList.remove('is-invalid') }
+      ok = setInvalid('cpAddress','cpAddress', !address) && ok
+
+      const submitErr = bd.querySelector('[data-err="cpSubmit"]')
+      submitErr.classList.remove('show'); submitErr.textContent = ''
+
+      if (!ok){ showToast('error','Please fix the highlighted fields'); return }
+
+      const origHtml = btn.innerHTML
+      btn.disabled = true
+      btn.classList.add('loading')
+      try {
+        const { error: rpcErr } = await supabase.rpc('complete_patient_profile', {
+          p_full_name: full_name, p_phone: phone, p_dob: dob, p_gender: gender, p_address: address
+        })
+        if (rpcErr) throw rpcErr
+        const { data: newPatient, error: readErr } = await supabase
+          .from('patients').select('*').eq('id', currentUser.id).maybeSingle()
+        if (readErr) throw readErr
+        if (!newPatient) throw new Error('Profile saved but could not be loaded. Please refresh.')
+        showToast('success','Profile completed')
+        document.removeEventListener('keydown', trapEsc, true)
+        bd.remove()
+        resolve(newPatient)
+      } catch(e){
+        submitErr.textContent = e?.message || 'Could not save profile. Please try again.'
+        submitErr.classList.add('show')
+        btn.disabled = false
+        btn.classList.remove('loading')
+      }
+    })
+  })
+}
+
+
+/* =============== THEME =============== */
+function applyThemeIcon(){ const t = document.documentElement.getAttribute('data-theme'); const ic = document.getElementById('themeIcon'); if (ic) ic.className = t === 'dark' ? 'ph-fill ph-sun' : 'ph-fill ph-moon' }
+function toggleTheme(){ const cur = document.documentElement.getAttribute('data-theme') || 'light'; const nxt = cur === 'light' ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', nxt); try { localStorage.setItem('atbu-theme', nxt) } catch(e){}; applyThemeIcon() }
+
+/* =============== DRAWER =============== */
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('drawerBackdrop').classList.add('open'); document.body.classList.add('drawer-open'); document.body.style.overflow = 'hidden' }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('drawerBackdrop').classList.remove('open'); document.body.classList.remove('drawer-open'); document.body.style.overflow = '' }
+
+/* =============== CUSTOM SELECT =============== */
+const CS_STATE = {}
+document.addEventListener('click', e => { if (!e.target.closest('.custom-select-wrap')) document.querySelectorAll('.custom-select-wrap.open').forEach(w => w.classList.remove('open')) })
+function _csRender(id){
+  const wrap = document.getElementById(id); const st = CS_STATE[id]; if (!wrap || !st) return
+  const isFilter = wrap.classList.contains('cs-filter')
+  const caretIcon = isFilter ? 'ph-funnel-simple' : 'ph-caret-circle-down'
+  const sel = st.options.find(o => String(o.value) === String(st.value))
+  const labelText = sel ? sel.label : (st.placeholder || 'Select…'); const cls = sel ? '' : ' placeholder'
+  const opts = st.options.length ? st.options.map((o,idx) => `<div class="cs-option${String(o.value)===String(st.value)?' active':''}${o.disabled?' disabled':''}" data-v="${escHtml(o.value)}" data-idx="${idx}" role="option">${escHtml(o.label)}${String(o.value)===String(st.value)?'<i class="ph ph-check"></i>':''}</div>`).join('') : '<div class="cs-option disabled">No options</div>'
+  wrap.innerHTML = `<button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false" tabindex="0"><span class="cs-label${cls}">${escHtml(labelText)}</span><i class="ph-fill ${caretIcon} cs-caret"></i></button><div class="custom-select-options" role="listbox">${opts}</div>`
+  const trig = wrap.querySelector('.custom-select-trigger')
+  const openIt = () => {
+    if (wrap.classList.contains('is-muted')){ showToast('info','Contact admin to change this.'); return }
+    document.querySelectorAll('.custom-select-wrap.open').forEach(w => { if (w.id !== id) w.classList.remove('open') })
+    wrap.classList.add('open'); trig.setAttribute('aria-expanded','true')
+    const cur = wrap.querySelector('.cs-option.active') || wrap.querySelector('.cs-option:not(.disabled)')
+    if (cur) cur.classList.add('focused')
+  }
+  const closeIt = () => { wrap.classList.remove('open'); trig.setAttribute('aria-expanded','false'); wrap.querySelectorAll('.cs-option.focused').forEach(o=>o.classList.remove('focused')) }
+  trig.addEventListener('click', e => { e.stopPropagation(); wrap.classList.contains('open') ? closeIt() : openIt() })
+  trig.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown'){ e.preventDefault(); openIt() }
+    if (e.key === 'Escape') closeIt()
+  })
+  wrap.querySelectorAll('.cs-option').forEach(opt => {
+    if (opt.classList.contains('disabled')) return
+    opt.addEventListener('click', e => { e.stopPropagation(); const v = opt.dataset.v; setCS(id, v); closeIt(); if (st.onChange) st.onChange(v); wrap.classList.remove('is-invalid') })
+    opt.addEventListener('mouseenter', () => { wrap.querySelectorAll('.cs-option.focused').forEach(o=>o.classList.remove('focused')); opt.classList.add('focused') })
+  })
+  wrap.addEventListener('keydown', e => {
+    if (!wrap.classList.contains('open')) return
+    const options = [...wrap.querySelectorAll('.cs-option:not(.disabled)')]
+    let cur = options.findIndex(o => o.classList.contains('focused'))
+    if (e.key === 'ArrowDown'){ e.preventDefault(); cur = (cur+1) % options.length; options.forEach(o=>o.classList.remove('focused')); options[cur].classList.add('focused'); options[cur].scrollIntoView({block:'nearest'}) }
+    else if (e.key === 'ArrowUp'){ e.preventDefault(); cur = (cur-1+options.length) % options.length; options.forEach(o=>o.classList.remove('focused')); options[cur].classList.add('focused'); options[cur].scrollIntoView({block:'nearest'}) }
+    else if (e.key === 'Enter'){ e.preventDefault(); if (options[cur]) options[cur].click() }
+    else if (e.key === 'Escape'){ e.preventDefault(); closeIt(); trig.focus() }
+  })
+}
+function initCS(id, options, opts={}){ const wrap = document.getElementById(id); if (!wrap) return; CS_STATE[id] = { options: options || [], value: opts.value !== undefined ? opts.value : (wrap.dataset.csDefault || ''), placeholder: opts.placeholder || wrap.dataset.csPlaceholder || 'Select…', onChange: opts.onChange || null }; _csRender(id) }
+function popCS(id, options){ if (!CS_STATE[id]) initCS(id, options); else { CS_STATE[id].options = options || []; if (!options.find(o => String(o.value) === String(CS_STATE[id].value))) CS_STATE[id].value = ''; _csRender(id) } }
+function getCS(id){ return CS_STATE[id]?.value || '' }
+function setCS(id, v){ if (!CS_STATE[id]) return; CS_STATE[id].value = v == null ? '' : String(v); _csRender(id) }
+
+/* =============== CUSTOM CALENDAR =============== */
+const CAL_STATE = {}
+function initCalendar(id, opts={}){
+  const host = document.getElementById(id); if (!host) return
+  const st = CAL_STATE[id] = {
+    value: opts.value || '',
+    min: opts.min || null,
+    max: opts.max || null,
+    onChange: opts.onChange || null,
+    placeholder: opts.placeholder || 'Select date',
+    focusedDate: opts.value ? new Date(opts.value) : new Date(),
+    viewMonth: (opts.value ? new Date(opts.value) : new Date()).getMonth(),
+    viewYear: (opts.value ? new Date(opts.value) : new Date()).getFullYear(),
+    open: false,
+  }
+  _calRender(id)
+}
+function calSetValue(id, v){ if (!CAL_STATE[id]) return; CAL_STATE[id].value = v; _calRender(id) }
+function calGetValue(id){ return CAL_STATE[id]?.value || '' }
+function _calRender(id){
+  const host = document.getElementById(id); const st = CAL_STATE[id]; if (!host||!st) return
+  const disp = st.value ? formatDate(st.value) : st.placeholder
+  const cls = st.value ? '' : ' placeholder'
+  host.innerHTML = `<div class="custom-select-wrap${st.open?' open':''}"><button type="button" class="custom-select-trigger cal-input" aria-haspopup="dialog" tabindex="0"><span class="cs-label${cls}">${escHtml(disp)}</span><i class="ph-fill ph-calendar-blank cs-caret" style="transform:none !important"></i></button>${st.open?_calPopover(id):''}</div>`
+  const trig = host.querySelector('.custom-select-trigger')
+  trig.addEventListener('click', e => { e.stopPropagation(); st.open = !st.open; _calRender(id) })
+  trig.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown'){ e.preventDefault(); st.open = true; _calRender(id) }
+    // Calendar no longer auto-closes on Escape — only the trigger button toggles it.
+  })
+  if (st.open){
+    const pop = host.querySelector('.cal-popover')
+    pop.addEventListener('click', e => e.stopPropagation())
+    pop.querySelector('.cal-prev').addEventListener('click', () => { st.viewMonth--; if (st.viewMonth<0){st.viewMonth=11;st.viewYear--} _calRender(id) })
+    pop.querySelector('.cal-next').addEventListener('click', () => { st.viewMonth++; if (st.viewMonth>11){st.viewMonth=0;st.viewYear++} _calRender(id) })
+    pop.querySelector('.cal-jump-month').addEventListener('click', e => e.stopPropagation())
+    pop.querySelector('.cal-jump-year').addEventListener('click', e => e.stopPropagation())
+    pop.querySelector('.cal-jump-month').addEventListener('change', e => { st.viewMonth = parseInt(e.target.value,10); _calRender(id) })
+    pop.querySelector('.cal-jump-year').addEventListener('change', e => { st.viewYear = parseInt(e.target.value,10); _calRender(id) })
+    pop.querySelector('.cal-today').addEventListener('click', () => { const t = new Date(); st.viewMonth = t.getMonth(); st.viewYear = t.getFullYear(); st.focusedDate = t; _calRender(id) })
+    pop.querySelector('.cal-clear').addEventListener('click', () => { st.value=''; st.open=false; if(st.onChange) st.onChange(''); _calRender(id) })
+    pop.querySelectorAll('.cal-day[data-d]').forEach(d => {
+      if (d.classList.contains('disabled')) return
+      d.addEventListener('click', () => {
+        st.value = d.dataset.d; if (st.onChange) st.onChange(st.value); _calRender(id)
+      })
+    })
+    setTimeout(()=>pop.focus(), 10)
+  }
+}
+function _calPopover(id){
+  const st = CAL_STATE[id]
+  const first = new Date(st.viewYear, st.viewMonth, 1)
+  const startDow = first.getDay()
+  const daysInMonth = new Date(st.viewYear, st.viewMonth+1, 0).getDate()
+  const daysInPrev = new Date(st.viewYear, st.viewMonth, 0).getDate()
+  const monthName = first.toLocaleDateString('en-US',{month:'long',year:'numeric'})
+  const dows = ['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('')
+  const today = new Date().toISOString().slice(0,10)
+  const min = st.min ? new Date(st.min) : null
+  const max = st.max ? new Date(st.max) : null
+  let cells = ''
+  for (let i=startDow-1;i>=0;i--) cells += `<div class="cal-day other">${daysInPrev-i}</div>`
+  for (let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(st.viewYear, st.viewMonth, d)
+    const iso = `${st.viewYear}-${String(st.viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    const isSel = iso === st.value
+    const isToday = iso === today
+    const disabled = (min && dateObj < new Date(min.toDateString())) || (max && dateObj > new Date(max.toDateString()))
+    cells += `<div class="cal-day${isSel?' selected':''}${isToday?' today':''}${disabled?' disabled':''}" data-d="${iso}">${d}</div>`
+  }
+  const total = startDow + daysInMonth
+  const trail = (7 - (total % 7)) % 7
+  for (let i=1;i<=trail;i++) cells += `<div class="cal-day other">${i}</div>`
+  const curYear = new Date().getFullYear()
+  const minYear = min ? min.getFullYear() : curYear - 110
+  const maxYear = max ? max.getFullYear() : curYear + 10
+  let yearOpts = ''
+  for (let y = maxYear; y >= minYear; y--){ yearOpts += `<option value="${y}"${y===st.viewYear?' selected':''}>${y}</option>` }
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  let monthOpts = monthNames.map((m,i) => `<option value="${i}"${i===st.viewMonth?' selected':''}>${m}</option>`).join('')
+  return `<div class="cal-popover" tabindex="-1"><div class="cal-head"><button type="button" class="cal-nav-btn cal-prev" aria-label="Previous month"><i class="ph ph-caret-left"></i></button><div class="cal-title cal-title-selects"><select class="cal-jump cal-jump-month" aria-label="Jump to month">${monthOpts}</select><select class="cal-jump cal-jump-year" aria-label="Jump to year">${yearOpts}</select></div><button type="button" class="cal-nav-btn cal-next" aria-label="Next month"><i class="ph ph-caret-right"></i></button></div><div class="cal-grid">${dows}${cells}</div><div class="cal-foot"><button type="button" class="cal-btn cal-clear">Clear</button><button type="button" class="cal-btn primary cal-today">Today</button></div></div>`
+}
+document.addEventListener('click', e => {
+  // Calendar no longer auto-closes on outside click — only the trigger button toggles it.
+})
+document.addEventListener('keydown', e => {
+  for (const id in CAL_STATE){
+    const st = CAL_STATE[id]; if (!st.open) continue
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','Escape'].includes(e.key)){
+      e.preventDefault()
+      if (e.key === 'Escape'){ continue }
+      const cur = st.focusedDate ? new Date(st.focusedDate) : new Date(st.viewYear, st.viewMonth, 1)
+      const delta = e.key==='ArrowLeft'?-1:e.key==='ArrowRight'?1:e.key==='ArrowUp'?-7:e.key==='ArrowDown'?7:0
+      if (delta){ cur.setDate(cur.getDate()+delta); st.focusedDate = cur; st.viewMonth = cur.getMonth(); st.viewYear = cur.getFullYear(); _calRender(id) }
+      if (e.key === 'Enter'){
+        const d = st.focusedDate
+        const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+        st.value = iso; if (st.onChange) st.onChange(iso); _calRender(id)
+      }
+    }
+  }
+})
+
+
+/* =============== DOB SEGMENTED INPUT =============== */
+const DOB_STATE = {}
+function initDobInput(id, opts={}){
+  const host = document.getElementById(id); if (!host) return
+  const st = DOB_STATE[id] = { value: opts.value || '', open: false, onChange: opts.onChange || null, collapseTimer: null }
+  _dobRender(id)
+}
+function dobGetValue(id){ return DOB_STATE[id]?.value || '' }
+function dobSetValue(id, v){ if (!DOB_STATE[id]) return; DOB_STATE[id].value = v || ''; _dobRender(id) }
+function _dobFormatCollapsed(iso){
+  if (!iso) return { text:'Date of birth', placeholder:true }
+  const d = new Date(iso+'T00:00:00'); if (isNaN(d)) return { text:'Date of birth', placeholder:true }
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' }
+  return { text: d.toLocaleDateString('en-US', opts), placeholder:false }
+}
+function _dobRender(id){
+  const host = document.getElementById(id); const st = DOB_STATE[id]; if (!host||!st) return
+  const parts = st.value ? st.value.split('-') : ['','','']
+  const yy = parts[0]||'', mm = parts[1]||'', dd = parts[2]||''
+  const disp = _dobFormatCollapsed(st.value)
+  host.classList.toggle('open', st.open)
+  host.innerHTML = `
+    <div class="dob-collapsed" role="button" tabindex="0" aria-expanded="${st.open}">
+      <i class="ph-fill ph-calendar-blank dob-cal-ico"></i>
+      <span class="dob-c-label${disp.placeholder?' placeholder':''}">${disp.text}</span>
+      <i class="ph-bold ph-caret-down dob-chev"></i>
+    </div>
+    <div class="dob-expanded">
+      <div class="dob-boxes">
+        <input class="dob-box day" data-part="dd" inputmode="numeric" pattern="\d*" maxlength="2" placeholder="DD" value="${dd}" aria-label="Day" />
+        <span class="dob-sep">/</span>
+        <input class="dob-box month" data-part="mm" inputmode="numeric" pattern="\d*" maxlength="2" placeholder="MM" value="${mm}" aria-label="Month" />
+        <span class="dob-sep">/</span>
+        <input class="dob-box year" data-part="yyyy" inputmode="numeric" pattern="\d*" maxlength="4" placeholder="YYYY" value="${yy}" aria-label="Year" />
+      </div>
+      <div class="dob-readout" data-readout></div>
+    </div>`
+  const collapsed = host.querySelector('.dob-collapsed')
+  collapsed.addEventListener('click', () => { st.open = !st.open; _dobRender(id); if (st.open) setTimeout(()=>host.querySelector('.dob-box.day')?.focus(), 60) })
+  collapsed.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' '){ e.preventDefault(); collapsed.click() } })
+
+  const boxes = Array.from(host.querySelectorAll('.dob-box'))
+  const readout = host.querySelector('[data-readout]')
+  const curYear = new Date().getFullYear()
+
+  const validateBox = (b) => {
+    const v = b.value
+    const part = b.dataset.part
+    if (v === ''){ b.classList.remove('valid','invalid'); return null }
+    let ok = false
+    if (part==='dd') ok = /^(0?[1-9]|[12]\d|3[01])$/.test(v)
+    else if (part==='mm') ok = /^(0?[1-9]|1[0-2])$/.test(v)
+    else if (part==='yyyy'){ ok = /^\d{4}$/.test(v) && (+v >= 1900) && (+v <= curYear) }
+    b.classList.toggle('valid', !!ok)
+    b.classList.toggle('invalid', !ok)
+    return ok
+  }
+
+  const updateReadout = () => {
+    const [db,mb,yb] = boxes
+    const allFilled = db.value && mb.value && yb.value.length===4
+    if (!allFilled){ readout.classList.remove('show','err'); readout.innerHTML=''; return }
+    const okAll = validateBox(db) && validateBox(mb) && validateBox(yb)
+    if (!okAll){ readout.classList.add('show','err'); readout.innerHTML = `<i class="ph-fill ph-warning-circle"></i> That date doesn't exist 👀`; return }
+    const dd = String(db.value).padStart(2,'0'), mm = String(mb.value).padStart(2,'0'), yy = yb.value
+    const iso = `${yy}-${mm}-${dd}`
+    const dObj = new Date(iso+'T00:00:00')
+    if (isNaN(dObj) || dObj.getFullYear()!=+yy || (dObj.getMonth()+1)!=+mm || dObj.getDate()!=+dd){
+      readout.classList.add('show','err'); readout.innerHTML = `<i class="ph-fill ph-warning-circle"></i> That date doesn't exist 👀`
+      db.classList.add('invalid'); return
+    }
+    if (dObj > new Date()){
+      readout.classList.add('show','err'); readout.innerHTML = `<i class="ph-fill ph-warning-circle"></i> Date of birth can't be in the future`
+      return
+    }
+    const wd = dObj.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' })
+    readout.classList.remove('err'); readout.classList.add('show')
+    readout.innerHTML = `<i class="ph-fill ph-check-circle check"></i> ${wd}`
+    // commit value — field stays open until the user closes it themselves (click the collapsed row toggle)
+    st.value = iso
+    if (st.onChange) st.onChange(iso)
+    if (st.collapseTimer) clearTimeout(st.collapseTimer)
+  }
+
+  boxes.forEach((b, idx) => {
+    b.addEventListener('input', () => {
+      b.value = b.value.replace(/\D/g,'')
+      validateBox(b)
+      if (b.value.length >= parseInt(b.getAttribute('maxlength'),10)){
+        const nxt = boxes[idx+1]; if (nxt) nxt.focus()
+      }
+      updateReadout()
+    })
+    b.addEventListener('keydown', e => {
+      if (e.key==='Backspace' && !b.value && idx>0){ boxes[idx-1].focus() }
+      if (e.key==='ArrowLeft' && b.selectionStart===0 && idx>0){ e.preventDefault(); boxes[idx-1].focus() }
+      if (e.key==='ArrowRight' && b.selectionEnd===b.value.length && idx<boxes.length-1){ e.preventDefault(); boxes[idx+1].focus() }
+    })
+    b.addEventListener('blur', () => validateBox(b))
+    b.addEventListener('paste', e => {
+      const txt = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'')
+      if (!txt) return
+      // If pasting looks like a full date, distribute
+      if (txt.length >= 6){
+        e.preventDefault()
+        let d,m,y
+        if (txt.length===8){ d=txt.slice(0,2); m=txt.slice(2,4); y=txt.slice(4,8) }
+        else { d=txt.slice(0,2); m=txt.slice(2,4); y=txt.slice(4,4+4).padEnd(4,'0') }
+        boxes[0].value=d; boxes[1].value=m; boxes[2].value=y
+        boxes.forEach(validateBox); updateReadout()
+      }
+    })
+    validateBox(b)
+  })
+  // initial readout if pre-filled
+  if (st.value) updateReadout()
+}
+
+/* =============== AUTH =============== */
+async function init(){
+  let session = null
+  try {
+    const r = await supabase.auth.getSession()
+    session = r.data?.session
+  } catch(e){ handleErr(e,'Session check failed'); return }
+  if (!session){ window.location.href = 'index.html'; return }
+  currentUser = session.user
+  // Detect whether this account already has email/password auth. Google-only users have no
+  // 'email' identity in identities[]. If identities is missing, fail toward showing the lock.
+  hasPasswordAuth = Array.isArray(currentUser.identities) && currentUser.identities.some(i => i && i.provider === 'email')
+
+  try {
+    const { data: roleRow, error: roleErr } = await supabase.from('user_roles').select('role').eq('id', currentUser.id).single()
+    if (roleErr || !roleRow || roleRow.role !== 'patient'){
+      // Non-patient role safeguard: Google Sign-In is patients only.
+      const isGoogle = (currentUser.app_metadata && currentUser.app_metadata.provider === 'google')
+        || (Array.isArray(currentUser.identities) && currentUser.identities.some(i => i.provider === 'google'))
+      await supabase.auth.signOut()
+      if (isGoogle){
+        window.location.href = 'index.html?e=oauth_not_patient'
+      } else {
+        window.location.href = 'index.html'
+      }
+      return
+    }
+    let { data: patient } = await supabase.from('patients').select('*').eq('id', currentUser.id).maybeSingle()
+    if (!patient){
+      // Brand-new Google signup — no patients row yet. Force profile completion.
+      try {
+        patient = await showCompleteProfileModal(currentUser)
+      } catch(e){
+        handleErr(e, 'Could not complete profile'); return
+      }
+    }
+    if (patient && patient.is_active === false){
+      await supabase.auth.signOut()
+      document.getElementById('authScreen').style.display = 'none'
+      document.getElementById('app').style.display = 'none'
+      document.body.innerHTML = '<div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:Poppins,sans-serif"><div><h1 style="color:#EF4444;font-size:26px;margin-bottom:10px">Account Deactivated</h1><p style="color:#64748B">Your account has been deactivated. Please contact the hospital admin.</p></div></div>'
+      return
+    }
+    currentProfile = patient
+  } catch(e){ handleErr(e); return }
+
+
+  document.getElementById('authScreen').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+  const welcomeText = currentProfile ? `Welcome back, ${currentProfile.full_name}` : 'Welcome'
+  ;['welcomeMsg','apptWelcomeMsg','rxWelcomeMsg','payWelcomeMsg','profWelcomeMsg'].forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.textContent = welcomeText
+  })
+
+  renderNav()
+  updateIslandProfile()
+  applyThemeIcon()
+  updateMainTopOffset(); setTimeout(updateMainTopOffset, 300)
+
+  initCS('apptFilter', [
+    {value:'all',label:'All Statuses'},{value:'pending',label:'Pending'},{value:'approved',label:'Approved'},
+    {value:'completed',label:'Completed'},{value:'cancelled',label:'Cancelled'},{value:'missed',label:'Missed'},
+  ], { value:'all', onChange:v => { apptFilter = v; loadAppointments(1) } })
+  initCS('payFilter', [
+    {value:'all',label:'All Payments'},{value:'unpaid',label:'Unpaid'},{value:'paid',label:'Paid'},{value:'pending_verification',label:'Pending Verification'},
+  ], { value:'all', onChange:v => { payFilter = v; loadPayments(1) } })
+  initCS('gender', [{value:'male',label:'Male'},{value:'female',label:'Female'}])
+
+  let savedTab = localStorage.getItem('atbu-active-tab') || 'dashboard'
+  if (!document.getElementById('page-'+savedTab)) savedTab = 'dashboard'
+  switchTab(savedTab)
+}
+
+async function doLogout(){
+  const ok = await showConfirm('Sign Out','Are you sure you want to sign out?','Sign Out')
+  if (!ok) return
+  await supabase.auth.signOut()
+  window.location.href = 'index.html'
+}
+
+/* =============== TAB SWITCH =============== */
+function switchTab(tabName){
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tabName))
+  document.querySelectorAll('.island-nav-item').forEach(el => el.classList.toggle('active', el.dataset.tab === tabName))
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  const target = document.getElementById('page-'+tabName); if (target) target.classList.add('active')
+  closeDrawer()
+  const fab = document.getElementById('fabBook')
+  fab.classList.toggle('show', tabName === 'appointments')
+  switch(tabName){
+    case 'dashboard': loadDashboard(); break
+    case 'appointments': loadAppointmentsInit(); break
+    case 'prescriptions': loadPrescriptions(); break
+    case 'payments': loadPayments(1); break
+    case 'profile': initProfile(); break
+  }
+  localStorage.setItem('atbu-active-tab', tabName)
+}
+
+/* =============== DASHBOARD =============== */
+async function loadDashboard(isRefresh){
+  const grid = document.getElementById('statGrid')
+  grid.innerHTML = skStatGrid(5)
+  try {
+    const [apptAll, apptPending, rxActive, payUnpaid, up] = await Promise.all([
+      supabase.from('appointments').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id),
+      supabase.from('appointments').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id).in('status', ['pending','approved']),
+      supabase.from('prescriptions').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id).eq('status','active'),
+      supabase.from('payments').select('id', { count:'exact', head:true }).eq('patient_id', currentUser.id).eq('status','unpaid'),
+      supabase.from('appointments').select('id, appointment_code, assigned_time, status, reason').eq('patient_id', currentUser.id).in('status', ['pending','approved']).order('assigned_time', { ascending: true }).limit(1),
+    ])
+    const upAppt = (up.data && up.data[0]) || null
+    const stats = [
+      { label:'My Appointments', icon:'ph-calendar-check', tint:'', value: apptAll.count ?? 0 },
+      { label:'Upcoming Appointments', icon:'ph-clock', tint:'amber', value: apptPending.count ?? 0 },
+      { label:'Active Prescriptions', icon:'ph-prescription', tint:'', value: rxActive.count ?? 0 },
+      { label:'Unpaid Payments', icon:'ph-warning-circle', tint:'amber', value: payUnpaid.count ?? 0 },
+    ]
+    let statHtml = stats.map(s => `<div class="stat-card"><div class="stat-icon ${s.tint}"><i class="ph-fill ${s.icon}"></i></div><div class="stat-meta"><div class="stat-label">${s.label}</div><div class="stat-value">${s.value}</div></div></div>`).join('')
+    // Upcoming appt card in same style
+    if (upAppt){
+      statHtml += `<div class="stat-card" style="grid-column:1/-1"><div class="stat-icon blue"><i class="ph-fill ph-calendar-star"></i></div><div class="stat-meta" style="flex:1"><div class="stat-label">Next Upcoming Appointment</div><div class="stat-value small">${formatDateTime(upAppt.assigned_time)} ${badge(upAppt.status)}</div></div></div>`
+    } else {
+      statHtml += `<div class="stat-card" style="grid-column:1/-1"><div class="stat-icon"><i class="ph-fill ph-calendar-slash"></i></div><div class="stat-meta"><div class="stat-label">Next Upcoming Appointment</div><div class="stat-value small" style="color:var(--text-muted)">No upcoming appointments</div></div></div>`
+    }
+    // Recent table
+    const { data: recent } = await supabase.from('appointments').select('id, appointment_code, assigned_time, status, reason, advice_to_patient, cancellation_note, doctor_slots ( doctors ( full_name ) )').eq('patient_id', currentUser.id).order('created_at', { ascending:false }).limit(5)
+    const tableHtml = `<div class="section-header" style="margin-top:24px"><div class="section-title">Recent Appointments</div><button class="btn-secondary btn-sm" data-jump="appointments">View All <i class="ph ph-arrow-right"></i></button></div><div class="table-wrap"><div class="table-scroll">${buildTable(apptColumns(false), recent||[], { emptyText:'No appointments yet — tap the + button on the Appointments page to book your first visit.' })}</div></div>`
+    grid.innerHTML = statHtml
+    grid.insertAdjacentHTML('afterend', '<div id="dashExtras">'+tableHtml+'</div>')
+    // remove duplicate old extras
+    const oldExtras = document.querySelectorAll('#dashExtras')
+    if (oldExtras.length>1){ oldExtras[0].remove() }
+    document.querySelectorAll('#dashExtras [data-jump]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.jump)))
+    document.querySelectorAll('#dashExtras [data-note]').forEach(b => b.addEventListener('click', () => showNoteModal(JSON.parse(b.dataset.note))))
+    if (isRefresh) showToast('success', 'Dashboard refreshed')
+  } catch(e){ handleErr(e,'Failed to load dashboard') }
+}
+
+/* =============== APPOINTMENTS =============== */
+function noteEyeBtn(row){
+  const reason = row.reason || ''
+  const note = row.cancellation_note || row.advice_to_patient || ''
+  if (!reason && !note) return emptyIcon()
+  const payload = escHtml(JSON.stringify({reason, note}))
+  return `<button class="icon-btn eye-btn" data-note='${payload}' title="View details" aria-label="View reason and note"><i class="ph-fill ph-eye"></i></button>`
+}
+function apptColumns(withActions){
+  const cols = [
+    { label:'Ref', render:r => `<span>${escHtml(r.appointment_code||r.id.slice(0,8))}</span>`, cellClass:'cell-id' },
+    { label:'Scheduled', render:r => formatDateTime(r.assigned_time), cellClass:'cell-date' },
+    { label:'Doctor', render:r => escHtml(r.doctors?.full_name || r.doctor_slots?.doctors?.full_name || '—') },
+    { label:'Details', render:r => noteEyeBtn(r) },
+    { label:'Status', render:r => badge(r.status) },
+  ]
+  if (withActions){
+    cols.push({ label:'Actions', render:r => (r.status === 'pending' || r.status === 'approved') ? `<button class="btn-danger btn-sm btn" data-cancel="${escHtml(r.id)}" aria-label="Cancel appointment"><i class="btn-icon ph ph-x"></i> <span class="btn-text">Cancel</span><span class="btn-dots"><span></span><span></span><span></span></span></button>` : `<span style="color:var(--text-muted);opacity:.5"><i class="ph ph-lock-simple"></i></span>` })
+  }
+  return cols
+}
+function showNoteModal({reason, note}){
+  const html = `${reason?`<div style="margin-bottom:12px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);font-weight:700;margin-bottom:4px">Reason</div><div style="color:var(--text);font-size:13.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word">${escHtml(reason)}</div></div>`:''}${note?`<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);font-weight:700;margin-bottom:4px">Note</div><div style="color:var(--text);font-size:13.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word">${escHtml(note)}</div></div>`:''}`
+  showInfoModal('Appointment Details', html || '<em>No details.</em>')
+}
+
+async function loadAppointmentsInit(){
+  loadAppointments(1)
+}
+
+async function loadAppointments(page, isRefresh){
+  apptPage = page
+  const wrap = document.getElementById('apptTableWrap')
+  wrap.innerHTML = skTable(6)
+  try {
+    let q = supabase.from('appointments').select('id, appointment_code, assigned_time, reason, status, cancellation_note, advice_to_patient, doctor_slots ( doctors ( full_name ) )', { count:'exact' }).eq('patient_id', currentUser.id)
+    if (apptFilter !== 'all') q = q.eq('status', apptFilter)
+    q = q.order('created_at', { ascending:false }).range((page-1)*PAGE_SIZE, page*PAGE_SIZE - 1)
+    const { data, count, error } = await q
+    if (error) throw error
+    renderApptAccordion(wrap, data || [])
+    buildPagination(document.getElementById('apptPag'), document.getElementById('apptPagInfo'), page, PAGE_SIZE, count || 0, (p)=>loadAppointments(p,true))
+  } catch(e){ handleErr(e); wrap.innerHTML = `<div class="state-box"><i class="ph-fill ph-warning"></i>Could not load appointments.</div>` }
+}
+
+function renderApptAccordion(wrap, data){
+  if (!data.length){
+    wrap.innerHTML = `<div class="state-box"><i class="ph-fill ph-tray"></i>No appointments yet — tap the + button to book your first visit.</div>`
+    return
+  }
+  wrap.innerHTML = data.map(r => {
+    const doctorName = escHtml(r.doctors?.full_name || r.doctor_slots?.doctors?.full_name || '—')
+    const canCancel = r.status === 'pending' || r.status === 'approved'
+    const hasNote = !!(r.reason || r.cancellation_note || r.advice_to_patient)
+    const actionHtml = canCancel
+      ? `<button class="btn-danger btn-sm btn" data-cancel="${escHtml(r.id)}" aria-label="Cancel appointment"><i class="btn-icon ph ph-x"></i> <span class="btn-text">Cancel</span><span class="btn-dots"><span></span><span></span><span></span></span></button>`
+      : ''
+    const noteHtml = hasNote
+      ? `<button class="btn-secondary btn-sm" data-note='${escHtml(JSON.stringify({reason:r.reason||'', note:r.cancellation_note||r.advice_to_patient||''}))}' aria-label="View details"><i class="ph ph-note"></i> View Details</button>`
+      : ''
+    return `<div class="pay-ac-card" data-appt-ac>
+      <div class="pay-ac-head">
+        <div>
+          <div class="pay-ac-title">
+            <span class="rx-doc"><span class="rx-doc-avatar">${escHtml(initialsOf(doctorName))}</span><span class="rx-doc-name">${doctorName}</span></span>
+          </div>
+          <div class="rx-med-sub">
+            <span class="rx-med-meta"><i class="ph-fill ph-calendar-blank"></i>${formatDateTime(r.assigned_time)}</span>
+            ${badge(r.status)}
+          </div>
+        </div>
+        <i class="ph ph-caret-down pay-ac-chevron"></i>
+      </div>
+      <div class="pay-ac-body">
+        <div class="pay-ac-rows">
+          <div class="pay-ac-row"><strong>Appointment ID</strong><span>${escHtml(r.appointment_code || r.id.slice(0,8))}</span></div>
+          ${r.reason ? `<div class="pay-ac-row"><strong>Reason</strong><span class="ac-clamp">${escHtml(r.reason)}</span></div>` : ''}
+        </div>
+        <div class="pay-ac-actions">${noteHtml}${noteHtml && actionHtml ? ' ' : ''}${actionHtml}</div>
+      </div>
+    </div>`
+  }).join('')
+  wrap.querySelectorAll('[data-appt-ac] .pay-ac-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const card = head.parentElement
+      const wasOpen = card.classList.contains('open')
+      wrap.querySelectorAll('[data-appt-ac].open').forEach(c => c.classList.remove('open'))
+      if (!wasOpen) card.classList.add('open')
+    })
+  })
+  wrap.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); cancelAppointment(b.dataset.cancel, b) }))
+  wrap.querySelectorAll('[data-note]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); showNoteModal(JSON.parse(b.dataset.note)) }))
+}
+
+async function cancelAppointment(id, btn){
+  const ok = await showConfirm('Cancel Appointment','Are you sure you want to cancel this appointment?','Cancel Appointment')
+  if (!ok) return
+  // TASK 6: disable button while the cancel request is in flight
+  const origHtml = btn ? btn.innerHTML : null
+  if (btn){ btn.disabled = true; btn.classList.add('loading') }
+  try {
+    const { error } = await supabase.from('appointments').update({ status:'cancelled', cancellation_note:'Cancelled by patient' }).eq('id', id).eq('patient_id', currentUser.id)
+    if (error){ handleErr(error,'Cancel failed'); return }
+    showToast('success','Appointment cancelled')
+    loadAppointments(apptPage, true); loadDashboard(true)
+  } finally {
+    if (btn){ btn.disabled = false; btn.classList.remove('loading') }
+  }
+}
+
+/* =============== BOOKING WIZARD MODAL =============== */
+let wiz = null
+async function openBookingWizard(){
+  wiz = { step:1, doctors:[], doctorId:'', slots:[], slotId:null, slotMeta:null, reason:'', selectedDate:'' }
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.id = 'bookWizBd'
+  bd.innerHTML = `<div class="modal-card wide">
+    <div class="modal-branded-head">
+      <div class="brand-icon"><img src="${LOGO_SRC}" alt="ATBU logo" /></div>
+      <div><h3>Book Appointment</h3><p>ATBU MediCare</p></div>
+      <button class="icon-btn" data-act="close" aria-label="Close" style="margin-left:auto;width:32px;height:32px"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="wizard-progress">
+      <div class="wiz-dot active" data-dot="1"></div>
+      <div class="wiz-dot" data-dot="2"></div>
+      <div class="wiz-dot" data-dot="3"></div>
+      <div class="wiz-dot" data-dot="4"></div>
+    </div>
+    <div class="wiz-step active" data-step="1">
+      <h4><i class="ph-fill ph-user-focus"></i> Choose a Doctor</h4>
+      <div id="wizDoctor" class="custom-select-wrap" data-cs-placeholder="Select a doctor…"></div>
+      <div class="field-error" data-err="doctor">Please choose a doctor.</div>
+    </div>
+    <div class="wiz-step" data-step="2">
+      <h4><i class="ph-fill ph-calendar-plus"></i> Pick a Shift</h4>
+      <div id="wizSlots" class="slots-grid"><div class="wiz-empty">Select a doctor first.</div></div>
+      <div class="field-error" data-err="slot">Please pick an available shift.</div>
+    </div>
+    <div class="wiz-step" data-step="3">
+      <h4><i class="ph-fill ph-note-pencil"></i> Reason for Visit</h4>
+      <textarea class="form-textarea" id="wizReason" placeholder="Briefly describe your reason for visit…"></textarea>
+      <div class="field-error" data-err="reason">Please enter a reason for your visit.</div>
+    </div>
+    <div class="wiz-step" data-step="4">
+      <h4><i class="ph-fill ph-check-square"></i> Review &amp; Confirm</h4>
+      <div class="wiz-review" id="wizReview"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;margin-top:20px">
+      <button class="btn-secondary" data-act="back" disabled><i class="ph ph-arrow-left"></i> Back</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" data-act="cancel">Cancel</button>
+        <button class="btn-primary btn" data-act="next"><span class="btn-icon"></span> <span class="btn-text">Next <i class="ph ph-arrow-right"></i></span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+      </div>
+    </div>
+  </div>`
+  document.body.appendChild(bd)
+  bd.addEventListener('click', e => { if (e.target === bd) closeWiz() })
+  bd.querySelector('[data-act="close"]').addEventListener('click', closeWiz)
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', closeWiz)
+  bd.querySelector('[data-act="back"]').addEventListener('click', wizBack)
+  bd.querySelector('[data-act="next"]').addEventListener('click', wizNext)
+
+  // load doctors — show fast glimmer shimmer while fetching
+  const step1 = bd.querySelector('[data-step="1"]')
+  const step1DocSlot = step1.querySelector('#wizDoctor')
+  if (step1DocSlot){
+    step1DocSlot.innerHTML = `<div class="wiz-doc-sk">
+      ${Array.from({length:3}).map(() => `<div class="wiz-doc-sk-item sk sk-glint"><span class="sk sk-glint sk-circle"></span><span class="sk sk-glint sk-line" style="flex:1;height:14px"></span></div>`).join('')}
+    </div>`
+  }
+  try {
+    const { data: doctors } = await supabase.from('doctors').select('id, full_name, licence_number').eq('is_active', true)
+    const today = new Date().toISOString().split('T')[0]
+    // TASK 4: live-check each active doctor for upcoming shifts, filter out doctors with none
+    const withShifts = await Promise.all((doctors || []).map(async d => {
+      const { data: slots } = await supabase.from('doctor_slots').select('id').eq('doctor_id', d.id).gte('date', today).limit(1)
+      return (slots && slots.length > 0) ? d : null
+    }))
+    wiz.doctors = withShifts.filter(Boolean)
+    if (wiz.doctors.length === 0){
+      step1.innerHTML = `<h4><i class="ph-fill ph-user-focus"></i> Choose a Doctor</h4>
+        <div class="wiz-empty"><i class="ph-fill ph-user-circle-minus" style="font-size:24px;display:block;margin-bottom:6px"></i>No doctors available right now — please check back later.</div>`
+      const nextBtn = bd.querySelector('[data-act="next"]')
+      nextBtn.disabled = true
+    } else {
+      initCS('wizDoctor', wiz.doctors.map(d => ({ value:d.id, label:d.full_name })), { onChange: async v => {
+        wiz.doctorId = v; wiz.slotId = null; wiz.slotMeta = null
+        document.querySelector('[data-err="doctor"]').classList.remove('show')
+        await wizLoadSlots()
+      } })
+    }
+  } catch(e){ handleErr(e) }
+}
+function closeWiz(){ document.getElementById('bookWizBd')?.remove(); wiz = null }
+function wizGoto(step){
+  wiz.step = step
+  const bd = document.getElementById('bookWizBd')
+  bd.querySelectorAll('.wiz-step').forEach(s => s.classList.toggle('active', parseInt(s.dataset.step,10)===step))
+  bd.querySelectorAll('.wiz-dot').forEach(d => { const n = parseInt(d.dataset.dot,10); d.classList.toggle('active', n===step); d.classList.toggle('done', n<step) })
+  bd.querySelector('[data-act="back"]').disabled = step === 1
+  bd.querySelector('[data-act="next"]').innerHTML = (step === 4 ? '<span class="btn-icon"></span> <span class="btn-text"><i class="ph-fill ph-check"></i> Confirm Booking</span>' : '<span class="btn-icon"></span> <span class="btn-text">Next <i class="ph ph-arrow-right"></i></span>') + '<span class="btn-dots"><span></span><span></span><span></span></span>'
+  if (step === 4) wizFillReview()
+}
+async function wizLoadSlots(){
+  const box = document.getElementById('wizSlots')
+  if (!wiz.doctorId){ box.innerHTML = '<div class="wiz-empty">Select a doctor first.</div>'; return }
+  box.innerHTML = skTable(2).replace(/<table>[\s\S]*/,'') + '<div class="wiz-empty"><i class="ph ph-spinner spin" style="font-size:20px;color:var(--primary)"></i> Loading shifts…</div>'
+  try {
+    const { data, error } = await supabase.from('doctor_slots').select('id, date, shift, capacity, booked_count').eq('doctor_id', wiz.doctorId).gte('date', new Date().toISOString().split('T')[0]).order('date',{ascending:true})
+    if (error) throw error
+    if (!data || data.length === 0){ box.innerHTML = '<div class="wiz-empty"><i class="ph-fill ph-calendar-slash" style="font-size:24px;display:block;margin-bottom:6px"></i>No available shifts for this doctor.</div>'; return }
+    wiz.slots = data
+    box.innerHTML = ''
+    data.forEach(slot => {
+      const left = slot.capacity - slot.booked_count
+      const card = document.createElement('div')
+      card.className = 'slot-card' + (left <= 0 ? ' disabled' : '')
+      card.innerHTML = `<div class="slot-date">${formatDate(slot.date)}</div><div class="slot-shift"><i class="ph-fill ${slot.shift==='night'?'ph-moon':'ph-sun'}"></i> ${escHtml(slot.shift)}</div><div class="slot-spots">${left > 0 ? left + ' spots left' : 'Full'}</div>`
+      if (left > 0) card.addEventListener('click', () => {
+        box.querySelectorAll('.slot-card').forEach(c => c.classList.remove('selected'))
+        card.classList.add('selected')
+        wiz.slotId = slot.id; wiz.slotMeta = slot
+        document.querySelector('[data-err="slot"]').classList.remove('show')
+      })
+      box.appendChild(card)
+    })
+  } catch(e){ handleErr(e); box.innerHTML = '<div class="wiz-empty">Could not load shifts.</div>' }
+}
+function wizValidateStep(){
+  const bd = document.getElementById('bookWizBd')
+  bd.querySelectorAll('.field-error').forEach(e=>e.classList.remove('show'))
+  if (wiz.step === 1 && !wiz.doctorId){ bd.querySelector('[data-err="doctor"]').classList.add('show'); return false }
+  if (wiz.step === 2 && !wiz.slotId){ bd.querySelector('[data-err="slot"]').classList.add('show'); return false }
+  if (wiz.step === 3){
+    wiz.reason = document.getElementById('wizReason').value.trim()
+    if (!wiz.reason){ bd.querySelector('[data-err="reason"]').classList.add('show'); return false }
+  }
+  return true
+}
+function wizBack(){ if (wiz.step > 1) wizGoto(wiz.step - 1) }
+async function wizNext(){
+  if (!wizValidateStep()) return
+  if (wiz.step < 4){ wizGoto(wiz.step + 1); return }
+  // Confirm booking
+  const btn = document.querySelector('[data-act="next"]'); btn.disabled = true; const orig = btn.innerHTML; btn.classList.add('loading')
+  try {
+    const { data, error } = await supabase.rpc('book_appointment', { p_slot_id: wiz.slotId, p_patient_id: currentUser.id, p_reason: wiz.reason })
+    if (error) throw error
+    const { data: newAppt } = await supabase.from('appointments').select('appointment_code').eq('id', data).single()
+    const code = newAppt?.appointment_code || data
+    showToast('success','Booked! Reference: ' + code)
+    closeWiz()
+    loadAppointments(1, true); loadDashboard(true)
+  } catch(e){ btn.disabled = false; btn.classList.remove('loading'); handleErr(e,'Booking failed') }
+}
+function wizFillReview(){
+  const doc = wiz.doctors.find(d=>d.id===wiz.doctorId)
+  document.getElementById('wizReview').innerHTML = `
+    <div class="rvw-row"><strong>Doctor</strong><span>${escHtml(doc?.full_name||'—')}</span></div>
+    <div class="rvw-row"><strong>Date</strong><span>${formatDate(wiz.slotMeta?.date)}</span></div>
+    <div class="rvw-row"><strong>Shift</strong><span style="text-transform:capitalize">${escHtml(wiz.slotMeta?.shift||'')}</span></div>
+    <div class="rvw-row" style="flex-direction:column;align-items:stretch"><strong style="margin-bottom:6px">Reason</strong>${textBlockHtml(wiz.reason)}</div>
+  `
+}
+
+/* =============== PRESCRIPTIONS =============== */
+async function loadPrescriptions(isRefresh){
+  const transWrap = document.getElementById('rxTransactionsWrap')
+  const medWrap = document.getElementById('rxMedicalWrap')
+  transWrap.innerHTML = skTable(4)
+  medWrap.innerHTML = skRxList(3)
+  try {
+    const { data, error } = await supabase.from('prescriptions')
+      .select(`
+        id, status, created_at,
+        appointment_id,
+        appointments ( appointment_code, assigned_time, advice_to_patient ),
+        doctors ( full_name ),
+        payments ( status ),
+        prescription_items ( id, dosage, frequency, duration, drug_stock ( drug_name, unit ) )
+      `)
+      .eq('patient_id', currentUser.id)
+      .order('created_at', { ascending:false })
+    if (error) throw error
+    rxCache = data || []
+    renderRxTransactions()
+    renderRxMedical()
+  } catch(e){
+    handleErr(e)
+    transWrap.innerHTML = `<div class="state-box"><i class="ph-fill ph-warning"></i>Could not load prescriptions.</div>`
+    medWrap.innerHTML = `<div class="state-box"><i class="ph-fill ph-warning"></i>Could not load prescriptions.</div>`
+  }
+}
+
+// Combines payments.status + prescriptions.status into one of 4 clear states
+function rxFulfillmentState(p){
+  const dispensed = (p.status||'').toLowerCase() === 'dispensed'
+  const payStatus = p.payments ? p.payments.status : 'unpaid'
+  if (dispensed) return { key:'dispensed', label:'Dispensed' }
+  if (payStatus === 'paid') return { key:'paid', label:'Paid — awaiting dispense' }
+  if (payStatus === 'pending_verification') return { key:'pending_verification', label:'Pending verification' }
+  return { key:'unpaid', label:'Unpaid' }
+}
+
+/* --- SECTION 1: TRANSACTIONS (payment/fulfillment status only) --- */
+function renderRxTransactions(){
+  const wrap = document.getElementById('rxTransactionsWrap')
+  const data = rxCache
+  if (!data.length){
+    wrap.innerHTML = `<div class="state-box"><i class="ph-fill ph-tray"></i>No prescriptions yet.</div>`
+    return
+  }
+  wrap.innerHTML = data.map(r => {
+    const apptCode = escHtml(r.appointments?.appointment_code || r.appointment_id?.slice(0,8) || '—')
+    const doctorName = escHtml(r.doctors?.full_name || '—')
+    return `<div class="pay-ac-card" data-rx-trans-ac>
+      <div class="pay-ac-head">
+        <div>
+          <div class="pay-ac-title">
+            <span class="rx-doc"><span class="rx-doc-avatar">${escHtml(initialsOf(doctorName))}</span><span class="rx-doc-name">${doctorName}</span></span>
+          </div>
+          <div class="rx-med-sub">
+            <span class="rx-med-meta"><i class="ph-fill ph-calendar-blank"></i>${formatDate(r.appointments?.assigned_time || r.created_at)}</span>
+            ${rxStatusBadge(rxFulfillmentState(r))}
+          </div>
+        </div>
+        <i class="ph ph-caret-down pay-ac-chevron"></i>
+      </div>
+      <div class="pay-ac-body">
+        <div class="pay-ac-rows">
+          <div class="pay-ac-row"><strong>Appointment</strong><span>${apptCode}</span></div>
+          <div class="pay-ac-row"><strong>Prescription ID</strong><span>${escHtml(r.id.slice(0,8))}</span></div>
+        </div>
+      </div>
+    </div>`
+  }).join('')
+  wrap.querySelectorAll('[data-rx-trans-ac] .pay-ac-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const card = head.parentElement
+      const wasOpen = card.classList.contains('open')
+      wrap.querySelectorAll('[data-rx-trans-ac].open').forEach(c => c.classList.remove('open'))
+      if (!wasOpen) card.classList.add('open')
+    })
+  })
+}
+
+/* --- SECTION 2: MEDICAL INSTRUCTIONS (what was prescribed, regardless of payment) --- */
+function renderRxMedical(){
+  const wrap = document.getElementById('rxMedicalWrap')
+  const data = rxCache
+  if (!data.length){ wrap.innerHTML = '<div class="state-box"><i class="ph-fill ph-clipboard-text"></i>No prescriptions yet.</div>'; return }
+  wrap.innerHTML = data.map(p => {
+    const advice = p.appointments?.advice_to_patient || ''
+    const items = p.prescription_items || []
+    const drugCols = [
+      { label:'Drug Name', render:it => {
+        const dn = it.drug_stock?.drug_name || 'Drug no longer available'
+        const unit = it.drug_stock?.unit || ''
+        const unitLower = unit.toLowerCase()
+        let formIcon = 'ph-pill' // generic fallback
+        if (/tab|cap/.test(unitLower)) formIcon = 'ph-pill'
+        else if (/syrup|liquid|bottle|\bml\b/.test(unitLower)) formIcon = 'ph-drop'
+        else if (/inject|vial|amp/.test(unitLower)) formIcon = 'ph-syringe'
+        return `<div class="rx-med-drug"><i class="ph-fill ${formIcon}"></i><span>${escHtml(dn)}</span></div>`
+      } },
+      { label:'Dosage', render:it => escHtml(it.dosage || '—') },
+      { label:'Frequency', render:it => escHtml(it.frequency || '—') },
+      { label:'Duration', render:it => escHtml(it.duration || '—') },
+    ]
+    const count = items.length
+    return `<div class="rx-med-card" data-rx-med>
+      <div class="rx-med-head">
+        <div>
+          <div class="rx-med-title">
+            <span class="rx-code-pill">${escHtml(p.appointments?.appointment_code || p.appointment_id?.slice(0,8) || '—')}</span>
+            <span class="rx-doc"><span class="rx-doc-avatar">${escHtml(initialsOf(p.doctors?.full_name))}</span><span class="rx-doc-name">Dr. ${escHtml(p.doctors?.full_name || '—')}</span></span>
+          </div>
+          <div class="rx-med-sub">
+            <span class="rx-med-meta"><i class="ph-fill ph-calendar-blank"></i>${formatDate(p.appointments?.assigned_time || p.created_at)}</span>
+            <span class="rx-med-meta"><i class="ph-fill ph-pill"></i>${count} item${count===1?'':'s'}</span>
+          </div>
+        </div>
+        <i class="ph ph-caret-down rx-med-chevron"></i>
+      </div>
+      <div class="rx-med-body">
+        ${advice ? `<div class="rx-med-advice"><div style="font-weight:700;margin-bottom:6px">Doctor's Advice</div>${textBlockHtml(advice, "Doctor's Advice")}</div>` : ''}
+        ${count ? `<div class="table-wrap"><div class="table-scroll">${buildTable(drugCols, items)}</div></div>` : '<div class="state-box" style="padding:12px">No drugs recorded for this prescription.</div>'}
+      </div>
+    </div>`
+  }).join('')
+  wrap.querySelectorAll('[data-rx-med] .rx-med-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const card = head.parentElement
+      const wasOpen = card.classList.contains('open')
+      wrap.querySelectorAll('[data-rx-med].open').forEach(c => c.classList.remove('open'))
+      if (!wasOpen) card.classList.add('open')
+    })
+  })
+}
+
+/* =============== PAYMENTS =============== */
+async function loadPayments(page, isRefresh){
+  payPage = page
+  const wrap = document.getElementById('payTableWrap')
+  wrap.innerHTML = skRxList(4)
+  try {
+    let q = supabase.from('payments').select('id, payment_code, amount, status, payment_method, payment_reference, created_at, prescription_id', { count:'exact' }).eq('patient_id', currentUser.id)
+    if (payFilter !== 'all') q = q.eq('status', payFilter)
+    q = q.order('created_at',{ascending:false}).range((page-1)*PAGE_SIZE, page*PAGE_SIZE - 1)
+    const { data, count, error } = await q
+    if (error) throw error
+
+    // fetch the drug names each payment covers, keyed by prescription_id
+    const prescIds = [...new Set((data||[]).map(p => p.prescription_id).filter(Boolean))]
+    let drugsByPrescId = {}
+    if (prescIds.length) {
+      const { data: items } = await supabase
+        .from('prescription_items')
+        .select('prescription_id, drug_stock ( drug_name )')
+        .in('prescription_id', prescIds)
+      ;(items || []).forEach(it => {
+        const name = it.drug_stock?.drug_name
+        if (!name) return
+        if (!drugsByPrescId[it.prescription_id]) drugsByPrescId[it.prescription_id] = []
+        drugsByPrescId[it.prescription_id].push(name)
+      })
+    }
+
+    if (!data || !data.length){
+      wrap.innerHTML = `<div class="state-box"><i class="ph-fill ph-tray"></i>No payments yet — invoices will appear here.</div>`
+    } else {
+      wrap.innerHTML = data.map(r => {
+        const drugs = drugsByPrescId[r.prescription_id] || []
+        const drugsLine = drugs.length ? `<div class="pay-drugs">${escHtml(drugs.join(', '))}</div>` : ''
+        let actionHtml = ''
+        if (r.status === 'unpaid') actionHtml = `<button class="btn-primary btn-sm" data-pay="${escHtml(r.id)}" aria-label="Submit payment"><i class="ph-fill ph-credit-card"></i> Pay</button>`
+        else if (r.status === 'paid') actionHtml = `<button class="btn-secondary btn-sm" data-receipt='${escHtml(JSON.stringify({id:r.id,code:r.payment_code,amount:r.amount,method:r.payment_method,ref:r.payment_reference,date:r.created_at}))}' aria-label="View receipt"><i class="ph-fill ph-receipt"></i> Receipt</button>`
+        else actionHtml = `<span style="color:var(--text-muted);font-size:11px">Awaiting verification</span>`
+        const methodRow = r.payment_method ? `<div class="pay-ac-row"><strong>Method</strong><span>${escHtml(r.payment_method)}</span></div>` : ''
+        const refRow = r.payment_reference ? `<div class="pay-ac-row"><strong>Reference</strong><span>${escHtml(r.payment_reference)}</span></div>` : ''
+        return `<div class="pay-ac-card" data-pay-ac>
+      <div class="pay-ac-head">
+        <div>
+          <div class="pay-ac-title">
+            <span class="rx-code-pill">${escHtml(r.payment_code||r.id.slice(0,8))}</span>
+            ${badge(r.status)}
+          </div>
+          ${drugsLine}
+          <div class="pay-ac-amount">${formatCurrency(r.amount)}</div>
+        </div>
+        <i class="ph ph-caret-down pay-ac-chevron"></i>
+      </div>
+      <div class="pay-ac-body">
+        <div class="pay-ac-rows">
+          ${methodRow}
+          ${refRow}
+          <div class="pay-ac-row"><strong>Date</strong><span>${escHtml(formatDateTime(r.created_at))}</span></div>
+        </div>
+        <div class="pay-ac-actions">${actionHtml}</div>
+      </div>
+    </div>`
+      }).join('')
+      wrap.querySelectorAll('[data-pay-ac] .pay-ac-head').forEach(head => {
+        head.addEventListener('click', () => {
+          const card = head.parentElement
+          const wasOpen = card.classList.contains('open')
+          wrap.querySelectorAll('[data-pay-ac].open').forEach(c => c.classList.remove('open'))
+          if (!wasOpen) card.classList.add('open')
+        })
+      })
+      wrap.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); openPayModal(b.dataset.pay, (data||[]).find(p => p.id === b.dataset.pay)) }))
+      wrap.querySelectorAll('[data-receipt]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); showReceiptModal(JSON.parse(b.dataset.receipt)) }))
+    }
+    buildPagination(document.getElementById('payPag'), document.getElementById('payPagInfo'), page, PAGE_SIZE, count || 0, (p)=>loadPayments(p,true))
+    if (isRefresh) showToast('success', 'Payments refreshed')
+  } catch(e){ handleErr(e); wrap.innerHTML = `<div class="state-box"><i class="ph-fill ph-warning"></i>Could not load payments.</div>` }
+}
+
+async function openPayModal(id, pay){
+  // Generate reference server-side
+  let ref = ''
+  try {
+    const { data, error } = await supabase.rpc('generate_payment_reference', { p_payment_id: id })
+    if (!error && data){ ref = data }
+  } catch(e){}
+  if (!ref) ref = 'PAY-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,8).toUpperCase()
+
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-branded-head">
+        <div class="brand-icon"><img src="${LOGO_SRC}" alt="ATBU logo" /></div>
+        <div><h3>Submit Payment</h3><p>ATBU MediCare</p></div>
+      </div>
+      <div class="modal-msg">Amount due: <strong style="color:var(--primary);font-size:18px">${formatCurrency(pay?.amount||0)}</strong></div>
+      <div class="form-field" style="margin-bottom:12px">
+        <label class="form-label">Payment Method</label>
+        <div id="modalMethod" class="custom-select-wrap" data-cs-placeholder="Choose method…"></div>
+        <div class="field-error" data-err="method">Please choose a payment method.</div>
+      </div>
+      <div class="form-field" style="margin-bottom:16px">
+        <label class="form-label">Payment Reference (auto-generated)</label>
+        <div class="form-input" style="background:rgba(148,163,184,0.10);color:var(--primary);font-weight:700;font-family:monospace;letter-spacing:.05em" id="modalRef">${escHtml(ref)}</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-act="cancel">Cancel</button>
+        <button class="btn-primary btn" data-act="submit"><i class="btn-icon ph-fill ph-paper-plane-tilt"></i> <span class="btn-text">Submit</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+      </div>
+    </div>`
+  document.body.appendChild(bd)
+  initCS('modalMethod', [
+    {value:'card',label:'Card'},
+    {value:'transfer',label:'Bank Transfer'},
+    {value:'cash_at_counter',label:'Cash at Counter'},
+  ])
+  const close = () => bd.remove()
+  bd.addEventListener('click', e => { if (e.target === bd) close() })
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', close)
+  bd.querySelector('[data-act="submit"]').addEventListener('click', async () => {
+    const method = getCS('modalMethod')
+    if (!method){ bd.querySelector('[data-err="method"]').classList.add('show'); return }
+    const ok = await showConfirm('Confirm Submission', `You're about to submit ${formatCurrency(pay?.amount||0)} for verification. Continue?`, 'Yes, submit')
+    if (!ok) return
+    const btn = bd.querySelector('[data-act="submit"]'); btn.disabled = true; btn.classList.add('loading')
+    const { error } = await supabase.from('payments').update({ status:'pending_verification', payment_method: method, payment_reference: ref }).eq('id', id).eq('patient_id', currentUser.id)
+    if (error){ handleErr(error,'Submission failed'); btn.disabled = false; btn.classList.remove('loading'); return }
+    close()
+    showToast('success','Payment submitted for verification')
+    loadPayments(payPage, true); loadDashboard(true)
+  })
+}
+
+/* Captures the receipt card exactly as rendered (animated medical background
+   included, one still frame) and downloads it as a PNG. */
+async function saveReceiptImage(card, code, btn){
+  if (typeof html2canvas !== 'function'){ showToast('error','Image export is unavailable right now.'); return }
+  const orig = btn ? btn.innerHTML : ''
+  if (btn){ btn.disabled = true; btn.classList.add('loading') }
+  try {
+    const styles = getComputedStyle(document.documentElement)
+    const canvas = await html2canvas(card, {
+      backgroundColor: styles.getPropertyValue('--panel-bg').trim() || '#ffffff',
+      scale: Math.min(window.devicePixelRatio || 1, 3),
+      useCORS: true,
+      logging: false,
+      width: card.offsetWidth,
+      height: card.offsetHeight,
+      windowWidth: card.offsetWidth,
+      scrollX: 0,
+      scrollY: 0,
+    })
+    const a = document.createElement('a')
+    a.href = canvas.toDataURL('image/png')
+    a.download = `ATBU-Receipt-${(code || 'receipt')}.png`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    showToast('success','Receipt saved as image')
+  } catch(e){
+    showToast('error','Could not save the receipt image.')
+  } finally {
+    if (btn){ btn.disabled = false; btn.classList.remove('loading') }
+  }
+}
+
+function showReceiptModal({code, amount, method, ref, date}){
+  const bd = document.createElement('div')
+  bd.className = 'modal-backdrop'
+  bd.innerHTML = `<div class="receipt-card"><div class="receipt-inner">
+    <div class="receipt-head"><div class="brand-icon"><img src="${LOGO_SRC}" alt="ATBU logo" /></div><h2>ATBU MediCare</h2><p>Abubakar Tafawa Balewa University · Official Receipt</p></div>
+    <div class="receipt-row"><strong>Receipt No.</strong><span>${escHtml(code||'—')}</span></div>
+    <div class="receipt-row"><strong>Patient</strong><span>${escHtml(currentProfile?.full_name||'—')}</span></div>
+    <div class="receipt-row"><strong>Method</strong><span>${escHtml(method||'—')}</span></div>
+    <div class="receipt-row"><strong>Reference</strong><span>${escHtml(ref||'—')}</span></div>
+    <div class="receipt-row"><strong>Date</strong><span>${formatDateTime(date)}</span></div>
+    <div class="receipt-row"><strong>Status</strong><span style="color:var(--success);font-weight:700">PAID</span></div>
+    <div class="receipt-amount">${formatCurrency(amount)}</div>
+    <div class="modal-actions"><button class="btn-secondary" data-act="close">Close</button><button class="btn-primary btn" data-act="save-image"><i class="btn-icon ph-fill ph-download-simple"></i> <span class="btn-text">Save as Image</span><span class="btn-dots"><span></span><span></span><span></span></span></button></div>
+  </div></div>`
+  document.body.appendChild(bd)
+  const receiptCard = bd.querySelector('.receipt-card')
+  injectReceiptMedBg(receiptCard)
+  bd.addEventListener('click', e => { if (e.target === bd) bd.remove() })
+  bd.querySelector('[data-act="close"]').addEventListener('click', () => bd.remove())
+  bd.querySelector('[data-act="save-image"]').addEventListener('click', e => saveReceiptImage(receiptCard, code, e.currentTarget))
+}
+
+/* =============== PROFILE =============== */
+function initProfile(isRefresh){
+  if (isRefresh){
+    (async () => {
+      const { data: patient } = await supabase.from('patients').select('*').eq('id', currentUser.id).single()
+      if (patient) currentProfile = patient
+      fillProfile()
+      showToast('success', 'Profile refreshed')
+    })()
+    return
+  }
+  fillProfile()
+}
+function fillProfile(){
+  if (!currentProfile) return
+  const p = currentProfile
+  document.getElementById('profileBanner').innerHTML = `<div class="profile-banner"><div class="pb-avatar">${escHtml(initials(p.full_name||'?'))}</div><div class="pb-name">${escHtml(p.full_name||'—')}</div><div class="pb-email">${escHtml(p.email||currentUser.email||'')}</div></div>`
+  document.getElementById('profName').value = p.full_name || ''
+  document.getElementById('profEmail').value = p.email || currentUser.email || ''
+  document.getElementById('profPhone').value = p.phone || ''
+  initDobInput('profDob', { value:p.dob||'', onChange:()=>{ document.querySelector('[data-err="profDob"]').classList.remove('show') } })
+  setCS('gender', p.gender || '')
+  document.getElementById('profAddress').value = p.address || ''
+}
+
+/* wire mobile accordion once (single-open, first group open by default) */
+function wireProfileAccordion(){
+  const groups = document.querySelectorAll('.profile-group')
+  groups.forEach(g => {
+    const head = g.querySelector('.pg-head')
+    head.addEventListener('click', () => {
+      const wasOpen = g.classList.contains('open')
+      groups.forEach(other => other.classList.remove('open'))
+      if (!wasOpen) g.classList.add('open')
+    })
+  })
+  if (groups.length) groups[0].classList.add('open')
+}
+
+async function submitChangePassword(){
+  const curEl = document.getElementById('secCurrentPw')
+  const newEl = document.getElementById('secNewPw')
+  const confirmEl = document.getElementById('secConfirmPw')
+  const errCur = document.querySelector('[data-err="secCurrentPw"]')
+  const errNew = document.querySelector('[data-err="secNewPw"]')
+  const errConfirm = document.querySelector('[data-err="secConfirmPw"]')
+  errCur.classList.remove('show'); errNew.classList.remove('show'); errConfirm.classList.remove('show')
+
+  const cur = curEl.value
+  const pw = newEl.value
+  const confirm = confirmEl.value
+  let valid = true
+  if (!cur){ errCur.classList.add('show'); valid = false }
+  if (!pw){ errNew.classList.add('show'); valid = false }
+  if (!confirm || confirm !== pw){ errConfirm.classList.add('show'); valid = false }
+  if (!valid) return
+
+  const btn = document.getElementById('secChangePwBtn')
+  const origHtml = btn.innerHTML
+  btn.disabled = true
+  btn.classList.add('loading')
+  try {
+    // Verify the current password is actually correct before allowing the change.
+    // Supabase has no direct "check password" call, so we re-authenticate with it.
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: currentUser.email,
+      password: cur
+    })
+    if (verifyError) {
+      errCur.textContent = 'Current password is incorrect.'
+      errCur.classList.add('show')
+      return
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: pw })
+    if (error) throw error
+    showToast('success', 'Password updated')
+    curEl.value = ''; newEl.value = ''; confirmEl.value = ''
+  } catch(e){
+    if (typeof handleErr === 'function') handleErr(e, 'Could not update password')
+    else showToast('error', e?.message || 'Could not update password')
+  } finally {
+    btn.disabled = false
+    btn.classList.remove('loading')
+  }
+}
+
+/* Google-only account security lock: swap the Security section into a locked
+   "Set Password" state for users who signed up with Google and don't yet have
+   password auth. Users with an 'email' identity keep the normal change-password form. */
+function renderSecuritySection(){
+  if (hasPasswordAuth) return
+  const secBtn = document.getElementById('secChangePwBtn')
+  if (!secBtn) return
+  const group = secBtn.closest('.profile-group')
+  if (!group) return
+  const body = group.querySelector('.pg-body')
+  if (!body) return
+  body.innerHTML = `
+    <div class="form-grid">
+      <div class="form-field" style="grid-column:1/-1">
+        <p style="margin:0 0 6px;line-height:1.5;color:#475569">
+          <i class="ph-fill ph-lock-key" style="margin-right:6px"></i>
+          You signed up with Google. To enable sign-in with a password as well, set one below.
+        </p>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-primary btn" id="secSetPwBtn"><i class="btn-icon ph-fill ph-lock-key"></i> <span class="btn-text">Set Password</span><span class="btn-dots"><span></span><span></span><span></span></span></button>
+    </div>
+  `
+  document.getElementById('secSetPwBtn').addEventListener('click', handleSetPassword)
+}
+
+async function handleSetPassword(){
+  const btn = document.getElementById('secSetPwBtn')
+  if (!btn) return
+  if (btn.dataset.mode === 'refresh'){ window.location.reload(); return }
+  const origHtml = btn.innerHTML
+  btn.disabled = true
+  btn.classList.add('loading')
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(currentUser.email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    })
+    if (error) throw error
+    showToast('success', 'Reset link sent — set your password from the email, then tap Refresh to unlock.')
+    btn.dataset.mode = 'refresh'
+    btn.disabled = false
+    btn.classList.remove('loading')
+    btn.innerHTML = '<i class="btn-icon ph-fill ph-arrows-clockwise"></i> <span class="btn-text">Refresh</span><span class="btn-dots"><span></span><span></span><span></span></span>'
+  } catch(e){
+    if (typeof handleErr === 'function') handleErr(e, 'Could not send reset link')
+    else showToast('error', e?.message || 'Could not send reset link')
+    btn.disabled = false
+    btn.classList.remove('loading')
+    btn.innerHTML = origHtml
+  }
+}
+
+/* Muted field click toasts */
+function wireMutedFields(){
+  document.getElementById('profEmail').addEventListener('click', ()=>showToast('info','Contact admin to change this.'))
+  document.getElementById('gender').addEventListener('click', e => { if (document.getElementById('gender').classList.contains('is-muted')) showToast('info','Contact admin to change this.') })
+}
+
+/* TASK 1: fixed medical option lists */
+const BLOOD_GROUP_OPTIONS = ['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(v => ({ value:v, label:v }))
+const GENOTYPE_OPTIONS = ['AA','AS','SS','AC','SC'].map(v => ({ value:v, label:v }))
+const ALLERGY_OPTIONS = ['Penicillin','Peanuts','Latex','Sulfa Drugs','Aspirin','Dust/Pollen','Seafood','Bee Stings']
+const CHRONIC_OPTIONS = ['Asthma','Diabetes','Hypertension','Epilepsy','Arthritis','Heart Disease','Sickle Cell Disease']
+
+/* Builds a checkbox checklist with an "Other" option that reveals a text input.
+   value: comma-separated string already saved (may include free-text items not in the list). */
+function buildChecklist(containerId, options, value){
+  const el = document.getElementById(containerId)
+  if (!el) return
+  const saved = (value || '').split(',').map(s => s.trim()).filter(Boolean)
+  const known = saved.filter(s => options.includes(s))
+  const otherVal = saved.filter(s => !options.includes(s)).join(', ')
+  el.innerHTML = options.map(opt => `
+    <label class="checklist-item"><input type="checkbox" value="${escHtml(opt)}" ${known.includes(opt)?'checked':''}> ${escHtml(opt)}</label>
+  `).join('') + `
+    <label class="checklist-item"><input type="checkbox" class="checklist-other-toggle" ${otherVal?'checked':''}> Other</label>
+    <div class="checklist-other-wrap"><input type="text" class="checklist-other-input ${otherVal?'show':''}" placeholder="Type other, comma-separated" value="${escHtml(otherVal)}" /></div>
+  `
+  const otherToggle = el.querySelector('.checklist-other-toggle')
+  const otherInput = el.querySelector('.checklist-other-input')
+  otherToggle.addEventListener('change', () => {
+    otherInput.classList.toggle('show', otherToggle.checked)
+    if (!otherToggle.checked) otherInput.value = ''
+    else otherInput.focus()
+  })
+}
+function getChecklistValue(containerId){
+  const el = document.getElementById(containerId)
+  if (!el) return ''
+  const checked = [...el.querySelectorAll('input[type="checkbox"]:not(.checklist-other-toggle):checked')].map(c => c.value)
+  const otherToggle = el.querySelector('.checklist-other-toggle')
+  const otherInput = el.querySelector('.checklist-other-input')
+  if (otherToggle?.checked && otherInput?.value.trim()) checked.push(otherInput.value.trim())
+  return checked.join(', ')
+}
+
+const setInvalid = (id, errId, cond) => {
+  const el = document.getElementById(id)
+  const errEl = document.querySelector(`[data-err="${errId}"]`)
+  if (cond){ el.classList.add('is-invalid'); if (errEl) errEl.classList.add('show') }
+  else { el.classList.remove('is-invalid'); if (errEl) errEl.classList.remove('show') }
+  return !cond
+}
+
+async function saveProfileSection(section, btn){
+  let payload = {}
+  let ok = true
+
+  // TASK 1: Medical Records — upsert into patient_medical_records
+  if (section === 'medical'){
+    const confirmed = await showConfirm('Update Medical Records','This overwrites your saved medical record (blood group, genotype, allergies, conditions and emergency contact). Continue?','Yes, update')
+    if (!confirmed) return
+    payload = {
+      patient_id: currentUser.id,
+      genotype: getCS('medGenotype') || null,
+      blood_group: getCS('medBloodGroup') || null,
+      allergies: getChecklistValue('medAllergiesList') || null,
+      chronic_conditions: getChecklistValue('medChronicList') || null,
+      emergency_contact_name: document.getElementById('medEmName').value.trim() || null,
+      emergency_contact_number: document.getElementById('medEmPhone').value.trim() || null,
+    }
+    const origHtml = btn.innerHTML
+    btn.disabled = true
+    btn.classList.add('loading')
+    try {
+      const { error } = await supabase
+        .from('patient_medical_records')
+        .upsert(payload, { onConflict: 'patient_id' })
+      if (error) throw error
+      showToast('success','Medical records saved')
+    } catch(e){
+      if (e && (e.code === '42501' || /permission/i.test(e.message||''))){
+        showToast('error','You do not have permission to update medical records.')
+      } else {
+        handleErr(e,'Save failed')
+      }
+    } finally {
+      btn.disabled = false
+      btn.classList.remove('loading')
+    }
+    return
+  }
+
+
+  if (section === 'personal'){
+    const full_name = document.getElementById('profName').value.trim()
+    const dob = dobGetValue('profDob') || null
+    ok = setInvalid('profName','profName', !full_name) && ok
+    const dobErr = document.querySelector('[data-err="profDob"]')
+    if (!dob){ dobErr.classList.add('show'); ok = false } else dobErr.classList.remove('show')
+    payload = { full_name, dob, gender: getCS('gender') }
+  } else if (section === 'contact'){
+    const phone = document.getElementById('profPhone').value.trim()
+    ok = setInvalid('profPhone','profPhone', !phone || phone.length < 7) && ok
+    payload = { phone }
+  } else if (section === 'address'){
+    const address = document.getElementById('profAddress').value.trim()
+    ok = setInvalid('profAddress','profAddress', !address) && ok
+    payload = { address }
+  }
+
+  if (!ok){ showToast('error','Please fix the highlighted fields'); return }
+
+  const origHtml = btn.innerHTML
+  btn.disabled = true
+  btn.classList.add('loading')
+  try {
+    const { error } = await supabase.from('patients').update(payload).eq('id', currentUser.id)
+    if (error) throw error
+    currentProfile = { ...currentProfile, ...payload }
+    if (payload.full_name){
+      const welcomeText = 'Welcome back, ' + payload.full_name
+      ;['welcomeMsg','apptWelcomeMsg','rxWelcomeMsg','payWelcomeMsg','profWelcomeMsg'].forEach(id => {
+        const el = document.getElementById(id)
+        if (el) el.textContent = welcomeText
+      })
+      updateIslandProfile()
+    }
+    fillProfile()
+    showToast('success','Saved')
+  } catch(e){
+    handleErr(e,'Save failed')
+  } finally {
+    btn.disabled = false
+    btn.classList.remove('loading')
+  }
+}
+
+
+/* TASK 1: Load current patient's medical record into the accordion inputs */
+async function loadMedicalRecord(){
+  try {
+    const { data, error } = await supabase
+      .from('patient_medical_records')
+      .select('genotype, blood_group, allergies, chronic_conditions, emergency_contact_name, emergency_contact_number')
+      .eq('patient_id', currentUser.id)
+      .maybeSingle()
+    if (error){
+      if (error.code === '42501' || /permission/i.test(error.message||'')){
+        initCS('medGenotype', GENOTYPE_OPTIONS, {}); initCS('medBloodGroup', BLOOD_GROUP_OPTIONS, {})
+        buildChecklist('medAllergiesList', ALLERGY_OPTIONS, ''); buildChecklist('medChronicList', CHRONIC_OPTIONS, '')
+        return
+      }
+      console.warn('loadMedicalRecord', error); return
+    }
+    const set = (id,v) => { const el=document.getElementById(id); if (el) el.value = v || '' }
+    initCS('medGenotype', GENOTYPE_OPTIONS, { value: data?.genotype || '' })
+    initCS('medBloodGroup', BLOOD_GROUP_OPTIONS, { value: data?.blood_group || '' })
+    buildChecklist('medAllergiesList', ALLERGY_OPTIONS, data?.allergies)
+    buildChecklist('medChronicList', CHRONIC_OPTIONS, data?.chronic_conditions)
+    if (!data) return
+    set('medEmName', data.emergency_contact_name)
+    set('medEmPhone', data.emergency_contact_number)
+  } catch(e){ console.warn('loadMedicalRecord', e) }
+}
+
+function wireProfileSectionSaves(){
+  document.querySelectorAll('[data-save-section]').forEach(btn => {
+    btn.addEventListener('click', () => saveProfileSection(btn.dataset.saveSection, btn))
+  })
+  // TASK 1: also load the patient's existing medical record
+  loadMedicalRecord()
+}
+
+/* =============== LAYOUT OFFSET =============== */
+function updateMainTopOffset(){
+  const topbarShell = document.querySelector('.topbar-shell')
+  const navWrapper = document.getElementById('desktopNavWrapper')
+  const isDesktop = window.innerWidth > 768
+  let offset
+  if (isDesktop){
+    offset = topbarShell ? topbarShell.getBoundingClientRect().bottom + 22 : 100
+  } else {
+    offset = 0
+    if (topbarShell){ const r = topbarShell.getBoundingClientRect(); offset = Math.max(offset, r.bottom) }
+    if (navWrapper && getComputedStyle(navWrapper).display !== 'none'){ const r = navWrapper.getBoundingClientRect(); offset = Math.max(offset, r.bottom) }
+    offset += 16
+  }
+  document.documentElement.style.setProperty('--main-top-offset', `${Math.ceil(offset)}px`)
+}
+window.addEventListener('load', updateMainTopOffset)
+window.addEventListener('resize', updateMainTopOffset)
+
+/* =============== EVENT WIRING =============== */
+initMedBg()
+document.getElementById('themeBtn').addEventListener('click', toggleTheme)
+document.getElementById('topbarLogoutBtn').addEventListener('click', doLogout)
+document.getElementById('drawerLogoutBtn').addEventListener('click', doLogout)
+document.getElementById('hamburgerBtn').addEventListener('click', openDrawer)
+document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer)
+document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer)
+const spinBtn = (btn) => { const ic = btn.querySelector('i'); ic.style.transition = 'transform 0.6s ease'; ic.style.transform = 'rotate(360deg)'; setTimeout(() => { ic.style.transition = 'none'; ic.style.transform = 'rotate(0deg)' }, 650) }
+document.getElementById('dashRefreshBtn').addEventListener('click', (e) => { spinBtn(e.currentTarget); loadDashboard(true) })
+document.getElementById('apptRefreshBtn').addEventListener('click', (e) => { spinBtn(e.currentTarget); loadAppointments(apptPage, true) })
+document.getElementById('rxRefreshBtn').addEventListener('click', (e) => { spinBtn(e.currentTarget); loadPrescriptions(true) })
+document.querySelectorAll('.subtab-btn[data-subtab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.subtab-btn[data-subtab]').forEach(b => b.classList.toggle('active', b === btn))
+    document.querySelectorAll('.subtab-panel').forEach(p => p.classList.remove('active'))
+    document.getElementById('subtab-' + btn.dataset.subtab).classList.add('active')
+  })
+})
+document.getElementById('payRefreshBtn').addEventListener('click', (e) => { spinBtn(e.currentTarget); loadPayments(payPage, true) })
+document.getElementById('profRefreshBtn').addEventListener('click', (e) => { spinBtn(e.currentTarget); initProfile(true) })
+document.getElementById('openBookWizard').addEventListener('click', openBookingWizard)
+document.getElementById('fabBook').addEventListener('click', openBookingWizard)
+document.getElementById('profileForm').addEventListener('submit', e => e.preventDefault())
+wireProfileAccordion()
+document.getElementById('secChangePwBtn').addEventListener('click', submitChangePassword)
+
+window.addEventListener('offline', () => showToast('error','Check your internet connection'))
+
+init().then(() => { wireMutedFields(); wireProfileSectionSaves(); renderSecuritySection() })
+
+/* ============= SCROLL EDGE GLASS-FADE (JS) =============
+   Auto-attaches the .scroll-fade-wrap fade/blur overlay behavior to any
+   scrollable container matching SCROLL_FADE_SELECTORS — including modals
+   built dynamically via innerHTML. Fades appear only when there's more
+   content to scroll to in that direction. */
+const SCROLL_FADE_SELECTORS = '.modal-card, .island-nav, .drawer-nav, .custom-select-options'
+
+function updateScrollFade(el){
+  if (!el) return
+  const atTop = el.scrollTop <= 2
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2
+  const canScroll = el.scrollHeight > el.clientHeight + 2
+  el.classList.toggle('show-top', canScroll && !atTop)
+  el.classList.toggle('show-bottom', canScroll && !atBottom)
+}
+
+function wireScrollFade(el){
+  if (!el || el.dataset.scrollFadeWired) return
+  el.dataset.scrollFadeWired = '1'
+  el.classList.add('scroll-fade-wrap')
+  el.addEventListener('scroll', () => updateScrollFade(el), { passive: true })
+  // Re-check after content/layout settles (images, dynamic rows, transitions)
+  requestAnimationFrame(() => updateScrollFade(el))
+  setTimeout(() => updateScrollFade(el), 300)
+  if (window.ResizeObserver){
+    new ResizeObserver(() => updateScrollFade(el)).observe(el)
+  }
+}
+
+function scanForScrollFade(root){
+  (root === document ? document : root).querySelectorAll?.(SCROLL_FADE_SELECTORS).forEach(wireScrollFade)
+  if (root.matches?.(SCROLL_FADE_SELECTORS)) wireScrollFade(root)
+}
+
+scanForScrollFade(document)
+new MutationObserver((mutations) => {
+  for (const m of mutations){
+    m.addedNodes.forEach(node => {
+      if (node.nodeType === 1) scanForScrollFade(node)
+    })
+  }
+}).observe(document.body, { childList: true, subtree: true })
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pw-toggle-btn')
+  if (!btn) return
+  const input = document.getElementById(btn.dataset.target)
+  if (!input) return
+  const icon = btn.querySelector('i')
+  const showing = input.type === 'text'
+  input.type = showing ? 'password' : 'text'
+  icon.className = showing ? 'ph ph-eye' : 'ph ph-eye-slash'
+  btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password')
+})
+</script>
+</body>
+</html>
